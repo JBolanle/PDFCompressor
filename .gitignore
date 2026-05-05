@@ -18,3 +18,17 @@ src-tauri/binaries/gs-*
 
 # macOS
 .DS_Store
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
