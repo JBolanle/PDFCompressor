@@ -1,0 +1,20 @@
+# Node
+node_modules/
+dist/
+
+# Rust / Cargo
+target/
+Cargo.lock
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# GS binaries (large, don't commit)
+src-tauri/binaries/gs-*
+
+# Superpowers
+.superpowers/
+
+# macOS
+.DS_Store
