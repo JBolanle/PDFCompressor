@@ -1,33 +1,9 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import { open } from "@tauri-apps/plugin-dialog";
   import { queue } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
+  import { addFiles, addPath } from "$lib/fileActions";
 
   let isDragOver = false;
-
-  async function handleAddFiles() {
-    const paths = await open({ multiple: true, filters: [{ name: "PDF", extensions: ["pdf"] }] });
-    if (!paths) return;
-    const list = Array.isArray(paths) ? paths : [paths];
-    for (const path of list) await addPath(path);
-  }
-
-  async function addPath(path: string) {
-    const name = path.split("/").pop() ?? path;
-    try {
-      const isPdf = await invoke<boolean>("validate_pdf", { path });
-      if (!isPdf) {
-        queue.addFile({ path, name, size: 0 });
-        queue.updateStatus(path, "error", { errorMsg: "Not a valid PDF file" });
-        return;
-      }
-      const meta = await invoke<{ size: number }>("get_file_meta", { path });
-      queue.addFile({ path, name, size: meta.size });
-    } catch {
-      queue.addFile({ path, name, size: 0 });
-    }
-  }
 
   function onDrop(e: DragEvent) {
     isDragOver = false;
@@ -85,7 +61,7 @@
     </ul>
   {/if}
 
-  <button class="add-btn" on:click={handleAddFiles}>+ Add files</button>
+  <button class="add-btn" on:click={addFiles}>+ Add files</button>
 </aside>
 
 <style>
