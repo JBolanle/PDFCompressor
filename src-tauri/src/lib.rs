@@ -10,6 +10,7 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use crate::compress::compress_files;
     use crate::settings::{get_settings, save_settings};
 
     tauri::Builder::default()
@@ -17,6 +18,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             greet,
+            compress_files,
             get_settings,
             save_settings,
         ])
