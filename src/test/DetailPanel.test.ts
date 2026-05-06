@@ -116,7 +116,6 @@ describe("DetailPanel", () => {
     render(DetailPanel);
     // Switch to custom_folder mode so Choose… button appears
     await user.click(screen.getByRole("radio", { name: /custom folder/i }));
-    vi.clearAllMocks();
     vi.mocked(open).mockResolvedValueOnce("/Users/me/Documents");
     await user.click(screen.getByRole("button", { name: /choose/i }));
     expect(invoke).toHaveBeenCalledWith("save_settings", {
