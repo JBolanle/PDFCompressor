@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 pub mod compress;
 pub mod finder;
+pub mod menu;
 pub mod path_resolver;
 pub mod settings;
 
@@ -51,12 +52,31 @@ pub fn run() {
     use crate::compress::compress_files;
     use crate::settings::{get_settings, save_settings};
     use crate::finder::reveal_in_finder;
+    use crate::menu::{build_menu, set_menu_item_enabled, MenuRegistry};
+    use tauri::{Emitter, Manager};
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .setup(|app| {
+            let (menu, registry) = build_menu(app.handle())?;
+            app.set_menu(menu)?;
+            app.handle().on_menu_event(|app, event| {
+                let name = match event.id().as_ref() {
+                    "add-files"        => "menu:add-files",
+                    "reveal-in-finder" => "menu:reveal-in-finder",
+                    "clear-queue"      => "menu:clear-queue",
+                    "compress"         => "menu:compress",
+                    "reset-selected"   => "menu:reset-selected",
+                    _                  => return,
+                };
+                let _ = app.emit(name, ());
+            });
+            app.manage(registry);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             compress_files,
             get_settings,
@@ -65,6 +85,7 @@ pub fn run() {
             get_file_meta,
             validate_pdf,
             check_path_writable_cmd,
+            set_menu_item_enabled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
