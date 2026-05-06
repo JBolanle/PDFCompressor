@@ -10,3 +10,7 @@ src-tauri/binaries/gs-*
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .superpowers/
+CLAUDE.md
+.mcp.json
+docs/superpowers/
+.impeccable.md
