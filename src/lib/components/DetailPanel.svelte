@@ -190,7 +190,8 @@
 </section>
 
 <style>
-  .detail-panel { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .detail-panel { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; min-width: 0; border-top: 1px solid var(--border); }
+  .detail-panel > * { max-width: 560px; width: 100%; }
 
   .filename {
     font-family: var(--font-display);
@@ -288,7 +289,7 @@
   }
   .retry-btn:hover { background: oklch(63% 0.22 25 / 0.15); }
 
-  .quality-controls { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .quality-controls { display: flex; flex-direction: column; gap: 12px; padding: 16px 0; border-top: 1px solid var(--border); }
 
   .section-label {
     font-size: var(--text-sm);
@@ -300,7 +301,7 @@
   .preset-control { display: flex; gap: 4px; }
   .preset-btn {
     flex: 1;
-    padding: 8px 4px;
+    padding: 12px 4px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);

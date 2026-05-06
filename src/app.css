@@ -94,8 +94,8 @@
 }
 
 body {
-  width: 620px;
-  height: 520px;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   user-select: none;
 }

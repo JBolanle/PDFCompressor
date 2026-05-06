@@ -95,6 +95,7 @@
     flex-direction: column;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     overflow: hidden;
     flex-shrink: 0;
   }
