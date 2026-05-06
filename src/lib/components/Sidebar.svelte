@@ -51,7 +51,7 @@
   role="region"
   aria-label="File queue"
 >
-  <div class="header">QUEUE</div>
+  <div class="header">Queue</div>
 
   {#if $queue.length === 0}
     <div class="empty">Drop PDFs here</div>
@@ -66,7 +66,7 @@
           on:keydown={(e) => e.key === "Enter" && selectedFileId.set(entry.id)}
         >
           <span class="status-icon" class:done={entry.status === "done"} class:error={entry.status === "error"} class:processing={entry.status === "processing"}>
-            {#if entry.status === "done"}✓{:else if entry.status === "error"}✕{:else if entry.status === "processing"}◌{:else}·{/if}
+            {#if entry.status === "done"}✓{:else if entry.status === "error"}✕{:else if entry.status === "processing"}<span class="spinner"></span>{:else}○{/if}
           </span>
           <span class="filename">{entry.name}</span>
           <button
@@ -95,18 +95,17 @@
   .sidebar.drag-over { outline: 2px dashed var(--accent); outline-offset: -4px; }
   .header {
     padding: 8px 12px 4px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.01em;
     color: var(--text-tertiary);
-    text-transform: uppercase;
   }
   .empty {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     font-size: 11px;
     text-align: center;
     padding: 16px;
@@ -125,11 +124,21 @@
     margin: 1px 4px;
   }
   .file-row:hover, .file-row.selected { background: var(--bg-tertiary); }
-  .file-row.selected { background: rgba(0, 122, 255, 0.15); }
-  .status-icon { font-size: 9px; flex-shrink: 0; color: var(--text-tertiary); }
+  .file-row.selected { background: var(--accent-muted); }
+  .status-icon { font-size: 10px; flex-shrink: 0; color: var(--text-tertiary); display: flex; align-items: center; }
   .status-icon.done { color: var(--success); }
   .status-icon.error { color: var(--error); }
   .status-icon.processing { color: var(--accent); }
+  .spinner {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--accent);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .filename { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
   .remove-btn { display: none; background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 10px; padding: 2px; }
   .file-row:hover .remove-btn { display: block; }

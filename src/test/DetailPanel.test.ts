@@ -40,29 +40,29 @@ describe("DetailPanel", () => {
     expect(screen.getByText(/show in finder/i)).toBeInTheDocument();
   });
 
-  it("shows Apply to all button when a pending file is selected", () => {
+  it("shows Apply DPI to all files button when a pending file is selected", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
-    expect(screen.getByRole("button", { name: /apply to all/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /apply dpi to all files/i })).toBeInTheDocument();
   });
 
-  it("Apply to all updates preset on all other pending files", async () => {
+  it("Apply DPI to all files updates preset on all other pending files", async () => {
     const user = userEvent.setup();
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     queue.addFile({ path: "/tmp/b.pdf", name: "b.pdf", size: 2000 });
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
-    await user.click(screen.getByRole("button", { name: /apply to all/i }));
+    await user.click(screen.getByRole("button", { name: /apply dpi to all files/i }));
     expect(get(queue)[1].preset).toBe("balanced");
   });
 
-  it("does not show Apply to all button when selected file is done", () => {
+  it("does not show Apply DPI to all files button when selected file is done", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     queue.updateStatus("/tmp/a.pdf", "done", { compressedSize: 500 });
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
-    expect(screen.queryByRole("button", { name: /apply to all/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /apply dpi to all files/i })).not.toBeInTheDocument();
   });
 
   // ── settings section ──────────────────────────────────────────────────────

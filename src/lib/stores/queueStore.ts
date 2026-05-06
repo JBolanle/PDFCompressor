@@ -44,6 +44,11 @@ function createQueueStore() {
         entries.map((e) => (e.status === "pending" ? { ...e, preset, dpiOverride } : e))
       );
     },
+    resetFile(id: string) {
+      update((entries) =>
+        entries.map((e) => e.id === id ? { ...e, status: "pending" as FileStatus, compressedSize: undefined, errorMsg: undefined } : e)
+      );
+    },
     clear() {
       set([]);
     },

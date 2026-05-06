@@ -8,6 +8,8 @@
 
   const selectedFile = derived([queue, selectedFileId], ([$q, $id]) => $q.find((e) => e.id === $id) ?? null);
 
+  $: hasFiles = $queue.length > 0;
+
   function formatSize(bytes: number): string {
     if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
     if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(0)} KB`;
@@ -22,10 +24,21 @@
     invoke("reveal_in_finder", { path });
   }
 
+  function resetToCompress() {
+    if (!$selectedFile) return;
+    queue.resetFile($selectedFile.id);
+  }
+
   const presetDpiRanges: Record<Preset, [number, number, number]> = {
     max:      [50,  72,  100],
     balanced: [100, 150, 200],
     minimal:  [200, 300, 400],
+  };
+
+  const presetInfo: Record<Preset, { label: string; desc: string; dpiRange: string }> = {
+    max:      { label: "Max",      desc: "Smallest file",  dpiRange: "50–100 dpi"  },
+    balanced: { label: "Balanced", desc: "Good trade-off", dpiRange: "100–200 dpi" },
+    minimal:  { label: "Minimal",  desc: "Best quality",   dpiRange: "200–400 dpi" },
   };
 
   $: currentPreset = $selectedFile?.preset ?? "balanced";
@@ -66,6 +79,11 @@
   {#if $selectedFile}
     <div class="file-info">
       <h2 class="filename">{$selectedFile.name}</h2>
+
+      {#if $selectedFile.status === "processing"}
+        <div class="progress-track"><div class="progress-bar"></div></div>
+      {/if}
+
       <div class="sizes">
         <div class="size-row"><span class="label">Original</span><span>{formatSize($selectedFile.size)}</span></div>
         {#if $selectedFile.status === "done" && $selectedFile.compressedSize !== undefined}
@@ -77,9 +95,13 @@
           <button class="finder-btn" on:click={() => revealInFinder($selectedFile!.path)}>
             Show in Finder
           </button>
+          <button class="recompress-btn" on:click={resetToCompress}>Re-compress</button>
         {/if}
         {#if $selectedFile.status === "error"}
-          <div class="error-msg">{$selectedFile.errorMsg ?? "Compression failed"}</div>
+          <div class="error-block">
+            <span class="error-text">{$selectedFile.errorMsg ?? "Compression failed"}</span>
+            <button class="retry-btn" on:click={resetToCompress}>Retry</button>
+          </div>
         {/if}
       </div>
     </div>
@@ -90,17 +112,28 @@
         <div class="preset-control">
           {#each (["max", "balanced", "minimal"] as Preset[]) as p}
             <button class="preset-btn" class:active={$selectedFile.preset === p} on:click={() => onPresetChange(p)}>
-              {p.charAt(0).toUpperCase() + p.slice(1)}
+              <span class="preset-name">{presetInfo[p].label}</span>
+              <span class="preset-meta">{presetInfo[p].desc} · {presetInfo[p].dpiRange}</span>
             </button>
           {/each}
         </div>
-        <input type="range" class="dpi-slider" min={sliderMin} max={sliderMax} value={sliderValue} on:input={onSliderChange} />
+        {#key currentPreset}
+          <input type="range" class="dpi-slider" min={sliderMin} max={sliderMax} value={sliderValue} on:input={onSliderChange} />
+        {/key}
+        <div class="slider-range">
+          <span>{sliderMin} dpi</span>
+          <span>{sliderMax} dpi</span>
+        </div>
         <div class="dpi-row">
           <span class="dpi-label">{sliderValue} DPI</span>
-          <button class="apply-all-btn" on:click={applyToAll}>Apply to all</button>
+          <button class="apply-all-btn" on:click={applyToAll}>Apply DPI to all files</button>
         </div>
       </div>
     {/if}
+  {:else if hasFiles}
+    <div class="empty-state">
+      <span>Select a file to configure</span>
+    </div>
   {/if}
 
   <div class="settings-section">
@@ -144,28 +177,163 @@
 
 <style>
   .detail-panel { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
-  .filename { font-size: 14px; font-weight: 600; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .filename {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .progress-track {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+    margin: 4px 0;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 40%;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: slide 1.2s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
   .sizes { display: flex; flex-direction: column; gap: 4px; }
   .size-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
   .label { color: var(--text-tertiary); }
   .compressed { color: var(--success); }
-  .savings { font-size: 22px; font-weight: 700; color: var(--success); margin-top: 4px; }
-  .finder-btn { margin-top: 8px; padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 12px; }
+
+  .savings {
+    font-family: var(--font-display);
+    font-size: var(--text-hero);
+    font-weight: var(--weight-bold);
+    color: var(--success);
+    margin-top: 4px;
+  }
+
+  .finder-btn {
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 12px;
+  }
   .finder-btn:hover { background: var(--bg-tertiary); }
-  .error-msg { margin-top: 4px; font-size: 11px; color: var(--error); }
+
+  .recompress-btn {
+    margin-top: 6px;
+    padding: 5px 10px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: var(--text-sm);
+  }
+  .recompress-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .error-block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: oklch(63% 0.22 25 / 0.1);
+    border-radius: var(--radius-sm);
+    border: 1px solid oklch(63% 0.22 25 / 0.25);
+  }
+  .error-text {
+    font-size: var(--text-sm);
+    color: var(--error);
+    flex: 1;
+  }
+  .retry-btn {
+    background: none;
+    border: 1px solid var(--error);
+    color: var(--error);
+    cursor: pointer;
+    font-size: var(--text-xs);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+  }
+  .retry-btn:hover { background: oklch(63% 0.22 25 / 0.15); }
+
   .quality-controls { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
-  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+
+  .section-label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.01em;
+    color: var(--text-tertiary);
+  }
+
   .preset-control { display: flex; gap: 4px; }
-  .preset-btn { flex: 1; padding: 5px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer; font-size: 11px; }
+  .preset-btn {
+    flex: 1;
+    padding: 8px 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
   .preset-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .preset-name { font-size: var(--text-base); font-weight: var(--weight-semibold); }
+  .preset-meta { font-size: var(--text-xs); color: var(--text-tertiary); }
+  .preset-btn.active .preset-meta { color: rgba(255, 255, 255, 0.75); }
+
   .dpi-slider { width: 100%; accent-color: var(--accent); }
+
+  .slider-range {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-top: -4px;
+  }
+
   .dpi-row { display: flex; justify-content: space-between; align-items: center; }
-  .dpi-label { font-size: 10px; color: var(--text-tertiary); }
-  .apply-all-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 10px; padding: 0; }
+  .dpi-label { font-size: var(--text-xs); color: var(--text-tertiary); }
+  .apply-all-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: var(--text-xs); padding: 0; }
   .apply-all-btn:hover { text-decoration: underline; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+  }
+
   .settings-section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
   .field { display: flex; flex-direction: column; gap: 6px; }
-  .field-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
+  .field-label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.01em;
+    color: var(--text-tertiary);
+  }
   .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
   .folder-row { display: flex; align-items: center; gap: 8px; }
   .folder-path { flex: 1; font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

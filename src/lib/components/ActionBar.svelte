@@ -17,8 +17,12 @@
 
   let isCompressing = false;
   let unlisten: (() => void) | null = null;
+  let compressTotal = 0;
+  let compressDone = 0;
 
   async function startCompression() {
+    compressTotal = get(pendingCount);
+    compressDone = 0;
     isCompressing = true;
 
     unlisten = await listen<ProgressEvent>("compress:progress", ({ payload }) => {
@@ -29,10 +33,12 @@
       if (payload.status === "done") {
         const compressedSize = entry.size - (payload.saved_bytes ?? 0);
         queue.updateStatus(payload.file, "done", { compressedSize });
+        compressDone++;
       } else if (payload.status === "error") {
         queue.updateStatus(payload.file, "error", { errorMsg: payload.error_msg });
         const name = payload.file.split("/").pop() ?? payload.file;
         toast.show(`${name}: ${payload.error_msg ?? "Compression failed"}`);
+        compressDone++;
       } else {
         queue.updateStatus(payload.file, "processing");
       }
@@ -49,6 +55,8 @@
       await invoke("compress_files", { jobs, settings: $settings });
     } finally {
       isCompressing = false;
+      compressTotal = 0;
+      compressDone = 0;
       unlisten?.();
       unlisten = null;
     }
@@ -72,7 +80,11 @@
     on:click={startCompression}
   >
     {#if isCompressing}
-      Compressing…
+      {#if compressTotal > 1}
+        Compressing {compressDone + 1}/{compressTotal}…
+      {:else}
+        Compressing…
+      {/if}
     {:else}
       Compress {$pendingCount} {$pendingCount === 1 ? "file" : "files"} ›
     {/if}
@@ -81,7 +93,7 @@
 
 <style>
   .action-bar { height: var(--action-bar-height); padding: 8px 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .compress-btn { flex: 1; height: 36px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.1s; }
+  .compress-btn { flex: 1; height: 36px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; font-family: var(--font-ui); cursor: pointer; transition: background 0.1s, opacity 0.15s; }
   .compress-btn:hover:not(:disabled) { background: var(--accent-hover); }
   .compress-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .clear-btn { height: 36px; padding: 0 14px; background: none; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
