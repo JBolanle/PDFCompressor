@@ -11,6 +11,9 @@ export default defineConfig({
       "@tauri-apps/plugin-dialog": fileURLToPath(
         new URL("./src/lib/mocks/tauri-plugin-dialog.ts", import.meta.url)
       ),
+      "@tauri-apps/plugin-notification": fileURLToPath(
+        new URL("./src/lib/mocks/tauri-plugin-notification.ts", import.meta.url)
+      ),
     },
   },
 
