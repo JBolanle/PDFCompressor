@@ -51,10 +51,16 @@
   role="region"
   aria-label="File queue"
 >
-  <div class="header">Queue</div>
+  <div class="header">
+    Queue
+    {#if $queue.length > 0}<span class="count">{$queue.length}</span>{/if}
+  </div>
 
   {#if $queue.length === 0}
-    <div class="empty">Drop PDFs here</div>
+    <div class="empty">
+      <span class="empty-title">Drop PDFs here</span>
+      <span class="empty-sub">or use "+ Add files" below</span>
+    </div>
   {:else}
     <ul class="file-list">
       {#each $queue as entry (entry.id)}
@@ -92,27 +98,46 @@
     overflow: hidden;
     flex-shrink: 0;
   }
-  .sidebar.drag-over { outline: 2px dashed var(--accent); outline-offset: -4px; }
+  .sidebar.drag-over { background: color-mix(in oklch, var(--bg-secondary), var(--accent) 8%); }
+  .sidebar.drag-over .empty { border-color: var(--accent); color: var(--accent); }
   .header {
     padding: 8px 12px 4px;
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
     letter-spacing: 0.01em;
     color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+  }
+  .count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 9px;
+    font-weight: var(--weight-semibold);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    margin-left: 6px;
   }
   .empty {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
-    font-size: 11px;
     text-align: center;
     padding: 16px;
     margin: 8px;
     border: 1.5px dashed var(--border);
     border-radius: var(--radius-md);
+    transition: border-color 0.15s, color 0.15s;
   }
+  .empty-title { font-size: 12px; color: var(--text-secondary); font-weight: var(--weight-medium); }
+  .empty-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; }
   .file-list { flex: 1; overflow-y: auto; list-style: none; padding: 4px 0; }
   .file-row {
     display: flex;
@@ -140,8 +165,8 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .filename { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .remove-btn { display: none; background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 10px; padding: 2px; }
-  .file-row:hover .remove-btn { display: block; }
+  .remove-btn { opacity: 0; background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 10px; padding: 2px; flex-shrink: 0; transition: opacity 0.1s; }
+  .file-row:hover .remove-btn { opacity: 1; }
   .add-btn {
     margin: 8px;
     padding: 6px;

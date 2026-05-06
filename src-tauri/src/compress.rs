@@ -47,6 +47,7 @@ pub struct ProgressEvent {
     pub file: String,
     pub status: String,
     pub saved_bytes: Option<i64>,
+    pub compressed_size: Option<i64>,
     pub error_msg: Option<String>,
 }
 
@@ -61,6 +62,7 @@ pub async fn compress_files(
             file: job.path.clone(),
             status: "processing".into(),
             saved_bytes: None,
+            compressed_size: None,
             error_msg: None,
         });
 
@@ -84,6 +86,7 @@ pub async fn compress_files(
                     file: job.path.clone(),
                     status: "done".into(),
                     saved_bytes: Some(original_size - compressed_size),
+                    compressed_size: Some(compressed_size),
                     error_msg: None,
                 });
             }
@@ -94,6 +97,7 @@ pub async fn compress_files(
                     file: job.path.clone(),
                     status: "error".into(),
                     saved_bytes: None,
+                    compressed_size: None,
                     error_msg: Some(msg),
                 });
             }

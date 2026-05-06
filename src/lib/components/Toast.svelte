@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { toast } from "$lib/stores/toastStore";
 </script>
 
 <div class="toast-container" aria-live="polite">
   {#each $toast as msg (msg.id)}
-    <div class="toast" role="alert">
+    <div class="toast" role="alert" in:fly={{ y: 10, duration: 200 }} out:fly={{ y: -4, duration: 150 }}>
       <span>{msg.message}</span>
       <button on:click={() => toast.dismiss(msg.id)} aria-label="Dismiss">✕</button>
     </div>

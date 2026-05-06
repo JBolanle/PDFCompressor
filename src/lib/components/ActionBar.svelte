@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { get } from "svelte/store";
+  import { get, derived } from "svelte/store";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { onDestroy } from "svelte";
   import { queue, pendingCount, allFinished } from "$lib/stores/queueStore";
+
+  const doneCount = derived(queue, ($q) => $q.filter((e) => e.status === "done").length);
+  const errorCount = derived(queue, ($q) => $q.filter((e) => e.status === "error").length);
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
   import { toast } from "$lib/stores/toastStore";
@@ -12,6 +15,7 @@
     file: string;
     status: "processing" | "done" | "error";
     saved_bytes?: number;
+    compressed_size?: number;
     error_msg?: string;
   }
 
@@ -31,7 +35,7 @@
       if (!entry) return;
 
       if (payload.status === "done") {
-        const compressedSize = entry.size - (payload.saved_bytes ?? 0);
+        const compressedSize = payload.compressed_size ?? (entry.size - (payload.saved_bytes ?? 0));
         queue.updateStatus(payload.file, "done", { compressedSize });
         compressDone++;
       } else if (payload.status === "error") {
@@ -74,6 +78,12 @@
   {#if $allFinished}
     <button class="clear-btn" on:click={clearQueue}>Clear queue</button>
   {/if}
+  {#if $doneCount > 0 || $errorCount > 0}
+    <div class="status-summary">
+      {#if $doneCount > 0}<span class="done-count">{$doneCount} done</span>{/if}
+      {#if $errorCount > 0}<span class="error-count">{$errorCount} error{$errorCount > 1 ? "s" : ""}</span>{/if}
+    </div>
+  {/if}
   <button
     class="compress-btn"
     disabled={$pendingCount === 0 || isCompressing}
@@ -86,7 +96,7 @@
         Compressing…
       {/if}
     {:else}
-      Compress {$pendingCount} {$pendingCount === 1 ? "file" : "files"} ›
+      Compress {$pendingCount} {$pendingCount === 1 ? "PDF" : "PDFs"}
     {/if}
   </button>
 </div>
@@ -98,4 +108,7 @@
   .compress-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .clear-btn { height: 36px; padding: 0 14px; background: none; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
   .clear-btn:hover { background: var(--bg-tertiary); }
+  .status-summary { display: flex; gap: 8px; align-items: center; font-size: var(--text-xs); white-space: nowrap; }
+  .done-count { color: var(--success); }
+  .error-count { color: var(--error); }
 </style>

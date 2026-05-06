@@ -87,15 +87,17 @@
       <div class="sizes">
         <div class="size-row"><span class="label">Original</span><span>{formatSize($selectedFile.size)}</span></div>
         {#if $selectedFile.status === "done" && $selectedFile.compressedSize !== undefined}
-          <div class="size-row">
-            <span class="label">Compressed</span>
-            <span class="compressed">{formatSize($selectedFile.compressedSize)}</span>
+          <div class="result-block">
+            <div class="savings-pct">{savingsPct($selectedFile.size, $selectedFile.compressedSize)}</div>
+            <div class="size-story">
+              {formatSize($selectedFile.size)} → {formatSize($selectedFile.compressedSize)}
+              · saved {formatSize($selectedFile.size - $selectedFile.compressedSize)}
+            </div>
+            <div class="result-actions">
+              <button class="finder-btn" on:click={() => revealInFinder($selectedFile!.path)}>Show in Finder</button>
+              <button class="recompress-btn" on:click={resetToCompress}>Re-compress</button>
+            </div>
           </div>
-          <div class="savings">{savingsPct($selectedFile.size, $selectedFile.compressedSize)}</div>
-          <button class="finder-btn" on:click={() => revealInFinder($selectedFile!.path)}>
-            Show in Finder
-          </button>
-          <button class="recompress-btn" on:click={resetToCompress}>Re-compress</button>
         {/if}
         {#if $selectedFile.status === "error"}
           <div class="error-block">
@@ -134,6 +136,11 @@
     <div class="empty-state">
       <span>Select a file to configure</span>
     </div>
+  {:else}
+    <div class="empty-state onboarding">
+      <span class="onboard-title">No files yet</span>
+      <span class="onboard-sub">Drop PDFs onto the sidebar or<br>click "+ Add files" to get started</span>
+    </div>
   {/if}
 
   <div class="settings-section">
@@ -144,11 +151,13 @@
       <label class="radio-label">
         <input type="radio" name="output_mode" bind:group={outputMode} value="same_as_source"
           on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
+        <span class="radio-dot"></span>
         Same as source
       </label>
       <label class="radio-label">
         <input type="radio" name="output_mode" bind:group={outputMode} value="custom_folder"
           on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
+        <span class="radio-dot"></span>
         Custom folder
       </label>
       {#if $settings.output_mode === "custom_folder"}
@@ -164,13 +173,18 @@
       <label class="radio-label">
         <input type="radio" name="naming" bind:group={naming} value="suffix"
           on:change={() => settings.save({ ...$settings, naming })} />
+        <span class="radio-dot"></span>
         Add <code>_compressed</code> suffix
       </label>
       <label class="radio-label">
         <input type="radio" name="naming" bind:group={naming} value="overwrite"
           on:change={() => settings.save({ ...$settings, naming })} />
+        <span class="radio-dot"></span>
         Overwrite original
       </label>
+      {#if naming === "overwrite"}
+        <p class="overwrite-warn">Original file will be replaced and cannot be recovered.</p>
+      {/if}
     </div>
   </div>
 </section>
@@ -209,19 +223,20 @@
   .sizes { display: flex; flex-direction: column; gap: 4px; }
   .size-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
   .label { color: var(--text-tertiary); }
-  .compressed { color: var(--success); }
 
-  .savings {
+  .result-block { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .savings-pct {
     font-family: var(--font-display);
-    font-size: var(--text-hero);
+    font-size: 28px;
     font-weight: var(--weight-bold);
     color: var(--success);
-    margin-top: 4px;
+    line-height: 1;
   }
+  .size-story { font-size: var(--text-sm); color: var(--text-secondary); }
+  .result-actions { display: flex; gap: 6px; margin-top: 2px; }
 
   .finder-btn {
-    margin-top: 8px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -232,7 +247,6 @@
   .finder-btn:hover { background: var(--bg-tertiary); }
 
   .recompress-btn {
-    margin-top: 6px;
     padding: 5px 10px;
     background: none;
     border: 1px solid var(--border);
@@ -299,10 +313,38 @@
   }
   .preset-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
   .preset-name { font-size: var(--text-base); font-weight: var(--weight-semibold); }
-  .preset-meta { font-size: var(--text-xs); color: var(--text-tertiary); }
-  .preset-btn.active .preset-meta { color: rgba(255, 255, 255, 0.75); }
+  .preset-meta { font-size: var(--text-xs); color: var(--text-secondary); opacity: 0.7; }
+  .preset-btn.active .preset-meta { color: rgba(255, 255, 255, 0.75); opacity: 1; }
 
-  .dpi-slider { width: 100%; accent-color: var(--accent); }
+  .dpi-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .dpi-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg-primary);
+    box-shadow: 0 0 0 1px var(--accent);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .dpi-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+  }
+  .dpi-slider:active::-webkit-slider-thumb {
+    transform: scale(0.95);
+  }
 
   .slider-range {
     display: flex;
@@ -314,17 +356,30 @@
 
   .dpi-row { display: flex; justify-content: space-between; align-items: center; }
   .dpi-label { font-size: var(--text-xs); color: var(--text-tertiary); }
-  .apply-all-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: var(--text-xs); padding: 0; }
-  .apply-all-btn:hover { text-decoration: underline; }
+  .apply-all-btn {
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    cursor: pointer;
+    font-size: var(--text-xs);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    transition: background 0.1s;
+  }
+  .apply-all-btn:hover { background: var(--accent-muted); }
 
   .empty-state {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     color: var(--text-tertiary);
     font-size: var(--text-sm);
   }
+  .onboarding { gap: 6px; }
+  .onboard-title { font-size: 13px; color: var(--text-secondary); font-weight: var(--weight-medium); }
+  .onboard-sub { font-size: 11px; color: var(--text-tertiary); text-align: center; line-height: 1.5; }
 
   .settings-section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
   .field { display: flex; flex-direction: column; gap: 6px; }
@@ -335,6 +390,29 @@
     color: var(--text-tertiary);
   }
   .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
+  .radio-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+  .radio-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--bg-primary);
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+  }
+  .radio-label input[type="radio"]:checked + .radio-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: inset 0 0 0 3px var(--bg-secondary);
+  }
+  .radio-label:hover .radio-dot { border-color: var(--accent); }
+  .overwrite-warn {
+    font-size: 10px;
+    color: var(--warning);
+    margin-top: -2px;
+    margin-left: 22px;
+    line-height: 1.4;
+  }
   .folder-row { display: flex; align-items: center; gap: 8px; }
   .folder-path { flex: 1; font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .folder-row button { padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); }
