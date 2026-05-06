@@ -40,6 +40,11 @@
     if (!$selectedFile) return;
     queue.updatePreset($selectedFile.id, $selectedFile.preset, Number((e.target as HTMLInputElement).value));
   }
+
+  function applyToAll() {
+    if (!$selectedFile) return;
+    queue.updateAllPresets($selectedFile.preset, $selectedFile.dpiOverride ?? presetDpiRanges[$selectedFile.preset][1]);
+  }
 </script>
 
 <section class="detail-panel">
@@ -77,7 +82,10 @@
           {/each}
         </div>
         <input type="range" class="dpi-slider" min={sliderMin} max={sliderMax} value={sliderValue} on:input={onSliderChange} />
-        <div class="dpi-label">{sliderValue} DPI</div>
+        <div class="dpi-row">
+          <span class="dpi-label">{sliderValue} DPI</span>
+          <button class="apply-all-btn" on:click={applyToAll}>Apply to all</button>
+        </div>
       </div>
     {/if}
   {/if}
@@ -101,5 +109,8 @@
   .preset-btn { flex: 1; padding: 5px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer; font-size: 11px; }
   .preset-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
   .dpi-slider { width: 100%; accent-color: var(--accent); }
-  .dpi-label { font-size: 10px; color: var(--text-tertiary); text-align: right; }
+  .dpi-row { display: flex; justify-content: space-between; align-items: center; }
+  .dpi-label { font-size: 10px; color: var(--text-tertiary); }
+  .apply-all-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 10px; padding: 0; }
+  .apply-all-btn:hover { text-decoration: underline; }
 </style>

@@ -24,10 +24,28 @@ describe("ActionBar", () => {
     expect(btn.textContent).toMatch(/2/);
   });
 
-  it("is disabled when all files are done", () => {
+  it("compress button is disabled when all files are done", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     queue.updateStatus("/tmp/a.pdf", "done");
     render(ActionBar);
-    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /compress/i })).toBeDisabled();
+  });
+
+  it("shows Clear queue button when all files are processed", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    queue.updateStatus("/tmp/a.pdf", "done");
+    render(ActionBar);
+    expect(screen.getByRole("button", { name: /clear queue/i })).toBeInTheDocument();
+  });
+
+  it("does not show Clear queue button when queue is empty", () => {
+    render(ActionBar);
+    expect(screen.queryByRole("button", { name: /clear queue/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show Clear queue button while files are still pending", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    render(ActionBar);
+    expect(screen.queryByRole("button", { name: /clear queue/i })).not.toBeInTheDocument();
   });
 });

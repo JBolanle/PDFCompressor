@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import { get } from "svelte/store";
 import { queue } from "$lib/stores/queueStore";
 import { selectedFileId } from "$lib/stores/selectionStore";
@@ -31,5 +32,30 @@ describe("DetailPanel", () => {
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
     expect(screen.getByText(/show in finder/i)).toBeInTheDocument();
+  });
+
+  it("shows Apply to all button when a pending file is selected", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    selectedFileId.set(get(queue)[0].id);
+    render(DetailPanel);
+    expect(screen.getByRole("button", { name: /apply to all/i })).toBeInTheDocument();
+  });
+
+  it("Apply to all updates preset on all other pending files", async () => {
+    const user = userEvent.setup();
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    queue.addFile({ path: "/tmp/b.pdf", name: "b.pdf", size: 2000 });
+    selectedFileId.set(get(queue)[0].id);
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /apply to all/i }));
+    expect(get(queue)[1].preset).toBe("balanced");
+  });
+
+  it("does not show Apply to all button when selected file is done", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    queue.updateStatus("/tmp/a.pdf", "done", { compressedSize: 500 });
+    selectedFileId.set(get(queue)[0].id);
+    render(DetailPanel);
+    expect(screen.queryByRole("button", { name: /apply to all/i })).not.toBeInTheDocument();
   });
 });

@@ -3,7 +3,8 @@
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { onDestroy } from "svelte";
-  import { queue, pendingCount } from "$lib/stores/queueStore";
+  import { queue, pendingCount, allFinished } from "$lib/stores/queueStore";
+  import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
   import { toast } from "$lib/stores/toastStore";
 
@@ -53,10 +54,18 @@
     }
   }
 
+  function clearQueue() {
+    queue.clear();
+    selectedFileId.set(null);
+  }
+
   onDestroy(() => unlisten?.());
 </script>
 
 <div class="action-bar">
+  {#if $allFinished}
+    <button class="clear-btn" on:click={clearQueue}>Clear queue</button>
+  {/if}
   <button
     class="compress-btn"
     disabled={$pendingCount === 0 || isCompressing}
@@ -71,8 +80,10 @@
 </div>
 
 <style>
-  .action-bar { height: var(--action-bar-height); padding: 8px 12px; border-top: 1px solid var(--border); display: flex; align-items: center; flex-shrink: 0; }
-  .compress-btn { width: 100%; height: 36px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.1s; }
+  .action-bar { height: var(--action-bar-height); padding: 8px 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .compress-btn { flex: 1; height: 36px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.1s; }
   .compress-btn:hover:not(:disabled) { background: var(--accent-hover); }
   .compress-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .clear-btn { height: 36px; padding: 0 14px; background: none; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
+  .clear-btn:hover { background: var(--bg-tertiary); }
 </style>

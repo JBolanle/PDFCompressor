@@ -39,6 +39,11 @@ function createQueueStore() {
         entries.map((e) => (e.id === id ? { ...e, preset, dpiOverride } : e))
       );
     },
+    updateAllPresets(preset: Preset, dpiOverride?: number) {
+      update((entries) =>
+        entries.map((e) => (e.status === "pending" ? { ...e, preset, dpiOverride } : e))
+      );
+    },
     clear() {
       set([]);
     },
@@ -47,3 +52,4 @@ function createQueueStore() {
 
 export const queue = createQueueStore();
 export const pendingCount = derived(queue, ($q) => $q.filter((e) => e.status === "pending").length);
+export const allFinished = derived(queue, ($q) => $q.length > 0 && $q.every((e) => e.status === "done" || e.status === "error"));

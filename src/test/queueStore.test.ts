@@ -53,4 +53,25 @@ describe("queueStore", () => {
     queue.updateStatus("/tmp/a.pdf", "done");
     expect(get(pendingCount)).toBe(1);
   });
+
+  it("updateAllPresets applies preset and dpiOverride to all pending files", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    queue.addFile({ path: "/tmp/b.pdf", name: "b.pdf", size: 2000 });
+    queue.updateAllPresets("max", 60);
+    const entries = get(queue);
+    expect(entries[0].preset).toBe("max");
+    expect(entries[0].dpiOverride).toBe(60);
+    expect(entries[1].preset).toBe("max");
+    expect(entries[1].dpiOverride).toBe(60);
+  });
+
+  it("updateAllPresets skips non-pending files", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    queue.addFile({ path: "/tmp/b.pdf", name: "b.pdf", size: 2000 });
+    queue.updateStatus("/tmp/a.pdf", "done");
+    queue.updateAllPresets("max", 60);
+    const entries = get(queue);
+    expect(entries[0].preset).toBe("balanced"); // done — untouched
+    expect(entries[1].preset).toBe("max");
+  });
 });
