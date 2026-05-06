@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 pub struct MenuRegistry(pub Mutex<HashMap<String, MenuItem<tauri::Wry>>>);
 
@@ -13,9 +13,24 @@ pub const MENU_IDS: &[&str] = &[
 ];
 
 pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry)> {
-    let add_files = MenuItem::with_id(app, "add-files", "Add Files\u{2026}", true, Some("cmd+o"))?;
-    let reveal = MenuItem::with_id(app, "reveal-in-finder", "Reveal in Finder", false, Some("cmd+shift+r"))?;
-    let sep = PredefinedMenuItem::separator(app)?;
+    // ── App menu (compress[pdf]) ──────────────────────────────────────────
+    let about      = PredefinedMenuItem::about(app, Some("About compress[pdf]"), Some(AboutMetadata::default()))?;
+    let hide       = PredefinedMenuItem::hide(app, Some("Hide compress[pdf]"))?;
+    let hide_others = PredefinedMenuItem::hide_others(app, None)?;
+    let show_all   = PredefinedMenuItem::show_all(app, None)?;
+    let quit       = PredefinedMenuItem::quit(app, Some("Quit compress[pdf]"))?;
+    let app_sep1   = PredefinedMenuItem::separator(app)?;
+    let app_sep2   = PredefinedMenuItem::separator(app)?;
+
+    let app_menu = Submenu::with_id_and_items(
+        app, "app-menu", "compress[pdf]", true,
+        &[&about, &app_sep1, &hide, &hide_others, &show_all, &app_sep2, &quit],
+    )?;
+
+    // ── File menu ─────────────────────────────────────────────────────────
+    let add_files  = MenuItem::with_id(app, "add-files", "Add Files\u{2026}", true, Some("cmd+o"))?;
+    let reveal     = MenuItem::with_id(app, "reveal-in-finder", "Reveal in Finder", false, Some("cmd+shift+r"))?;
+    let sep        = PredefinedMenuItem::separator(app)?;
     let clear_queue = MenuItem::with_id(app, "clear-queue", "Clear Queue", false, Some("cmd+shift+backspace"))?;
 
     let file_menu = Submenu::with_id_and_items(
@@ -23,15 +38,26 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
         &[&add_files, &reveal, &sep, &clear_queue],
     )?;
 
+    // ── Queue menu ────────────────────────────────────────────────────────
     let compress = MenuItem::with_id(app, "compress", "Compress", false, Some("cmd+return"))?;
-    let reset = MenuItem::with_id(app, "reset-selected", "Reset Selected", false, Some("cmd+r"))?;
+    let reset    = MenuItem::with_id(app, "reset-selected", "Reset Selected", false, Some("cmd+r"))?;
 
     let queue_menu = Submenu::with_id_and_items(
         app, "queue-menu", "Queue", true,
         &[&compress, &reset],
     )?;
 
-    let menu = Menu::with_items(app, &[&file_menu, &queue_menu])?;
+    // ── Window menu ───────────────────────────────────────────────────────
+    let minimize     = PredefinedMenuItem::minimize(app, None)?;
+    let close_window = PredefinedMenuItem::close_window(app, None)?;
+    let win_sep      = PredefinedMenuItem::separator(app)?;
+
+    let window_menu = Submenu::with_id_and_items(
+        app, "window-menu", "Window", true,
+        &[&minimize, &win_sep, &close_window],
+    )?;
+
+    let menu = Menu::with_items(app, &[&app_menu, &file_menu, &queue_menu, &window_menu])?;
 
     let mut map = HashMap::new();
     map.insert("add-files".to_string(), add_files);

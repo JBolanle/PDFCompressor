@@ -52,7 +52,7 @@ pub fn run() {
     use crate::compress::compress_files;
     use crate::settings::{get_settings, save_settings};
     use crate::finder::reveal_in_finder;
-    use crate::menu::{build_menu, set_menu_item_enabled, MenuRegistry};
+    use crate::menu::{build_menu, set_menu_item_enabled};
     use tauri::{Emitter, Manager};
 
     tauri::Builder::default()
