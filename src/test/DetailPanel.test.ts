@@ -4,20 +4,22 @@ import userEvent from "@testing-library/user-event";
 import { get } from "svelte/store";
 import { queue } from "$lib/stores/queueStore";
 import { selectedFileId } from "$lib/stores/selectionStore";
+import { settings } from "$lib/stores/settingsStore";
 import DetailPanel from "$lib/components/DetailPanel.svelte";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 
+import { invoke } from "@tauri-apps/api/core";
+
 describe("DetailPanel", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     queue.clear();
     selectedFileId.set(null);
+    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix" });
+    vi.clearAllMocks();
   });
 
-  it("shows placeholder when no file is selected", () => {
-    render(DetailPanel);
-    expect(screen.getByText(/select a file/i)).toBeInTheDocument();
-  });
+  // ── existing tests ────────────────────────────────────────────────────────
 
   it("shows file name pre-compression", () => {
     queue.addFile({ path: "/tmp/report.pdf", name: "report.pdf", size: 3_200_000 });
@@ -57,5 +59,51 @@ describe("DetailPanel", () => {
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
     expect(screen.queryByRole("button", { name: /apply to all/i })).not.toBeInTheDocument();
+  });
+
+  // ── settings section ──────────────────────────────────────────────────────
+
+  it("shows settings section when no file is selected", () => {
+    render(DetailPanel);
+    expect(screen.getByText(/output folder/i)).toBeInTheDocument();
+    expect(screen.getByText(/file naming/i)).toBeInTheDocument();
+  });
+
+  it("shows settings section when a file is selected", () => {
+    queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
+    selectedFileId.set(get(queue)[0].id);
+    render(DetailPanel);
+    expect(screen.getByText(/output folder/i)).toBeInTheDocument();
+    expect(screen.getByText(/file naming/i)).toBeInTheDocument();
+  });
+
+  it("changing output mode to custom_folder saves immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("radio", { name: /custom folder/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ output_mode: "custom_folder" }),
+    });
+  });
+
+  it("changing file naming to overwrite saves immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("radio", { name: /overwrite original/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ naming: "overwrite" }),
+    });
+  });
+
+  it("shows Choose button when output mode is custom_folder", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("radio", { name: /custom folder/i }));
+    expect(screen.getByRole("button", { name: /choose/i })).toBeInTheDocument();
+  });
+
+  it("does not show Choose button when output mode is same_as_source", () => {
+    render(DetailPanel);
+    expect(screen.queryByRole("button", { name: /choose/i })).not.toBeInTheDocument();
   });
 });

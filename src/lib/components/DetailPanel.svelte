@@ -1,8 +1,10 @@
 <script lang="ts">
   import { derived } from "svelte/store";
   import { invoke } from "@tauri-apps/api/core";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
+  import { settings } from "$lib/stores/settingsStore";
 
   const selectedFile = derived([queue, selectedFileId], ([$q, $id]) => $q.find((e) => e.id === $id) ?? null);
 
@@ -45,12 +47,17 @@
     if (!$selectedFile) return;
     queue.updateAllPresets($selectedFile.preset, $selectedFile.dpiOverride ?? presetDpiRanges[$selectedFile.preset][1]);
   }
+
+  async function pickFolder() {
+    const folder = await open({ directory: true });
+    if (typeof folder === "string") {
+      await settings.save({ ...$settings, output_folder: folder });
+    }
+  }
 </script>
 
 <section class="detail-panel">
-  {#if !$selectedFile}
-    <div class="empty-state">Select a file from the queue</div>
-  {:else}
+  {#if $selectedFile}
     <div class="file-info">
       <h2 class="filename">{$selectedFile.name}</h2>
       <div class="sizes">
@@ -89,11 +96,52 @@
       </div>
     {/if}
   {/if}
+
+  <div class="settings-section">
+    <div class="section-label">Settings</div>
+
+    <div class="field">
+      <div class="field-label">Output Folder</div>
+      <label class="radio-label">
+        <input type="radio" name="output_mode" value="same_as_source"
+          checked={$settings.output_mode === "same_as_source"}
+          on:change={() => settings.save({ ...$settings, output_mode: "same_as_source" })} />
+        Same as source
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="output_mode" value="custom_folder"
+          checked={$settings.output_mode === "custom_folder"}
+          on:change={() => settings.save({ ...$settings, output_mode: "custom_folder" })} />
+        Custom folder
+      </label>
+      {#if $settings.output_mode === "custom_folder"}
+        <div class="folder-row">
+          <span class="folder-path">{$settings.output_folder ?? "No folder selected"}</span>
+          <button on:click={pickFolder}>Choose…</button>
+        </div>
+      {/if}
+    </div>
+
+    <div class="field">
+      <div class="field-label">File Naming</div>
+      <label class="radio-label">
+        <input type="radio" name="naming" value="suffix"
+          checked={$settings.naming === "suffix"}
+          on:change={() => settings.save({ ...$settings, naming: "suffix" })} />
+        Add <code>_compressed</code> suffix
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="naming" value="overwrite"
+          checked={$settings.naming === "overwrite"}
+          on:change={() => settings.save({ ...$settings, naming: "overwrite" })} />
+        Overwrite original
+      </label>
+    </div>
+  </div>
 </section>
 
 <style>
   .detail-panel { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
-  .empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 12px; }
   .filename { font-size: 14px; font-weight: 600; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sizes { display: flex; flex-direction: column; gap: 4px; }
   .size-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
@@ -113,4 +161,11 @@
   .dpi-label { font-size: 10px; color: var(--text-tertiary); }
   .apply-all-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 10px; padding: 0; }
   .apply-all-btn:hover { text-decoration: underline; }
+  .settings-section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
+  .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
+  .folder-row { display: flex; align-items: center; gap: 8px; }
+  .folder-path { flex: 1; font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-row button { padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); }
 </style>
