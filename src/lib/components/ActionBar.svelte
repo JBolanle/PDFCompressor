@@ -2,14 +2,16 @@
   import { get, derived } from "svelte/store";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
   import { queue, pendingCount, allFinished } from "$lib/stores/queueStore";
-
-  const doneCount = derived(queue, ($q) => $q.filter((e) => e.status === "done").length);
-  const errorCount = derived(queue, ($q) => $q.filter((e) => e.status === "error").length);
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
   import { toast } from "$lib/stores/toastStore";
+  import { buildNotificationBody } from "$lib/notification";
+
+  const doneCount = derived(queue, ($q) => $q.filter((e) => e.status === "done").length);
+  const errorCount = derived(queue, ($q) => $q.filter((e) => e.status === "error").length);
 
   interface ProgressEvent {
     file: string;
@@ -23,6 +25,23 @@
   let unlisten: (() => void) | null = null;
   let compressTotal = 0;
   let compressDone = 0;
+
+  async function notifyBatchComplete(done: number, errors: number, savedBytes: number) {
+    try {
+      let permitted = await isPermissionGranted();
+      if (!permitted) {
+        const result = await requestPermission();
+        permitted = result === "granted";
+      }
+      if (!permitted) return;
+      sendNotification({
+        title: "compress[pdf]",
+        body: buildNotificationBody(done, errors, savedBytes),
+      });
+    } catch {
+      // Notification is non-critical — never throw
+    }
+  }
 
   async function startCompression() {
     compressTotal = get(pendingCount);
@@ -63,6 +82,16 @@
       compressDone = 0;
       unlisten?.();
       unlisten = null;
+
+      const $q = get(queue);
+      const done = $q.filter((e) => e.status === "done").length;
+      const errors = $q.filter((e) => e.status === "error").length;
+      if (done + errors > 0) {
+        const savedBytes = $q
+          .filter((e) => e.status === "done")
+          .reduce((acc, e) => acc + (e.size - (e.compressedSize ?? e.size)), 0);
+        notifyBatchComplete(done, errors, savedBytes);
+      }
     }
   }
 
@@ -71,7 +100,14 @@
     selectedFileId.set(null);
   }
 
-  onDestroy(() => unlisten?.());
+  onMount(() => {
+    window.addEventListener("app:compress", startCompression);
+  });
+
+  onDestroy(() => {
+    unlisten?.();
+    window.removeEventListener("app:compress", startCompression);
+  });
 </script>
 
 <div class="action-bar">
