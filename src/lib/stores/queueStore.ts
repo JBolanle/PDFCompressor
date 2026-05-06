@@ -1,5 +1,4 @@
 import { writable, derived } from "svelte/store";
-import { randomUUID } from "crypto";
 
 export type FileStatus = "pending" | "processing" | "done" | "error";
 export type Preset = "max" | "balanced" | "minimal";
@@ -24,7 +23,7 @@ function createQueueStore() {
     addFile(file: Omit<FileEntry, "id" | "status" | "preset">) {
       update((entries) => {
         if (entries.some((e) => e.path === file.path)) return entries;
-        return [...entries, { ...file, id: randomUUID(), status: "pending", preset: "balanced" }];
+        return [...entries, { ...file, id: crypto.randomUUID(), status: "pending", preset: "balanced" }];
       });
     },
     removeFile(id: string) {

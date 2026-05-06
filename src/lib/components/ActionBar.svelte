@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { derived, get } from "svelte/store";
+  import { get } from "svelte/store";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { onDestroy } from "svelte";
@@ -16,11 +16,6 @@
 
   let isCompressing = false;
   let unlisten: (() => void) | null = null;
-
-  const isDisabled = derived(
-    [pendingCount],
-    ([$pending]) => $pending === 0 || isCompressing
-  );
 
   async function startCompression() {
     isCompressing = true;
@@ -64,7 +59,7 @@
 <div class="action-bar">
   <button
     class="compress-btn"
-    disabled={$isDisabled}
+    disabled={$pendingCount === 0 || isCompressing}
     on:click={startCompression}
   >
     {#if isCompressing}

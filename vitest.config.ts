@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { fileURLToPath, URL } from "url";
 
 export default defineConfig({
   plugins: [sveltekit()],
@@ -7,7 +8,9 @@ export default defineConfig({
   resolve: {
     conditions: ["browser"],
     alias: {
-      "@tauri-apps/plugin-dialog": "/Users/k4iju/Projects/PDFCompressor/src/lib/mocks/tauri-plugin-dialog.ts",
+      "@tauri-apps/plugin-dialog": fileURLToPath(
+        new URL("./src/lib/mocks/tauri-plugin-dialog.ts", import.meta.url)
+      ),
     },
   },
 

@@ -57,12 +57,16 @@ pub async fn compress_files(
     settings: Settings,
 ) -> Result<(), String> {
     for job in &jobs {
-        app.emit("compress:progress", ProgressEvent {
+        let _ = app.emit("compress:progress", ProgressEvent {
             file: job.path.clone(),
             status: "processing".into(),
             saved_bytes: None,
             error_msg: None,
-        }).map_err(|e| e.to_string())?;
+        });
+
+        // Capture original size before any writes so overwrite mode is correct
+        let original_size = std::fs::metadata(&job.path)
+            .map(|m| m.len() as i64).unwrap_or(0);
 
         let output_path = resolve_output_path(&job.path, &settings);
         let tmp_path = output_path.with_extension("pdf.tmp");
@@ -73,27 +77,25 @@ pub async fn compress_files(
             Ok(()) => {
                 std::fs::rename(&tmp_path, &output_path).map_err(|e| e.to_string())?;
 
-                let original_size = std::fs::metadata(&job.path)
-                    .map(|m| m.len() as i64).unwrap_or(0);
                 let compressed_size = std::fs::metadata(&output_path)
                     .map(|m| m.len() as i64).unwrap_or(0);
 
-                app.emit("compress:progress", ProgressEvent {
+                let _ = app.emit("compress:progress", ProgressEvent {
                     file: job.path.clone(),
                     status: "done".into(),
                     saved_bytes: Some(original_size - compressed_size),
                     error_msg: None,
-                }).map_err(|e| e.to_string())?;
+                });
             }
             Err(msg) => {
                 let _ = std::fs::remove_file(&tmp_path);
 
-                app.emit("compress:progress", ProgressEvent {
+                let _ = app.emit("compress:progress", ProgressEvent {
                     file: job.path.clone(),
                     status: "error".into(),
                     saved_bytes: None,
                     error_msg: Some(msg),
-                }).map_err(|e| e.to_string())?;
+                });
             }
         }
     }
@@ -125,7 +127,7 @@ async fn run_gs(app: &AppHandle, args: Vec<String>) -> Result<(), String> {
             _ => {}
         }
     }
-    Ok(())
+    Err("GS process terminated unexpectedly".into())
 }
 
 #[cfg(test)]
