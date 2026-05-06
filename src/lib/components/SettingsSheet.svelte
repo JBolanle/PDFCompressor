@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from "svelte";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { settings } from "$lib/stores/settingsStore";
   import type { AppSettings } from "$lib/stores/settingsStore";
 
@@ -10,13 +11,8 @@
   onDestroy(unsub);
 
   async function pickFolder() {
-    try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const folder = await open({ directory: true });
-      if (typeof folder === "string") draft = { ...draft, output_folder: folder };
-    } catch (e) {
-      console.error("Failed to pick folder", e);
-    }
+    const folder = await open({ directory: true });
+    if (typeof folder === "string") draft = { ...draft, output_folder: folder };
   }
 
   async function save() {

@@ -1,21 +1,16 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { queue } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
 
   let isDragOver = false;
 
   async function handleAddFiles() {
-    try {
-      // Dynamic import to avoid issues if plugin-dialog isn't available yet
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const paths = await open({ multiple: true, filters: [{ name: "PDF", extensions: ["pdf"] }] });
-      if (!paths) return;
-      const list = Array.isArray(paths) ? paths : [paths];
-      for (const path of list) await addPath(path);
-    } catch (e) {
-      console.error("Failed to open file dialog", e);
-    }
+    const paths = await open({ multiple: true, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+    if (!paths) return;
+    const list = Array.isArray(paths) ? paths : [paths];
+    for (const path of list) await addPath(path);
   }
 
   async function addPath(path: string) {
