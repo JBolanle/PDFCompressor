@@ -33,6 +33,12 @@
   $: sliderMax = presetDpiRanges[currentPreset][2];
   $: sliderValue = $selectedFile?.dpiOverride ?? presetDpiRanges[currentPreset][1];
 
+  let outputMode: "same_as_source" | "custom_folder" = $settings.output_mode;
+  let naming: "suffix" | "overwrite" = $settings.naming;
+
+  $: outputMode = $settings.output_mode;
+  $: naming = $settings.naming;
+
   function onPresetChange(preset: Preset) {
     if (!$selectedFile) return;
     queue.updatePreset($selectedFile.id, preset, presetDpiRanges[preset][1]);
@@ -103,15 +109,13 @@
     <div class="field">
       <div class="field-label">Output Folder</div>
       <label class="radio-label">
-        <input type="radio" name="output_mode" value="same_as_source"
-          checked={$settings.output_mode === "same_as_source"}
-          on:change={() => settings.save({ ...$settings, output_mode: "same_as_source" })} />
+        <input type="radio" name="output_mode" bind:group={outputMode} value="same_as_source"
+          on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
         Same as source
       </label>
       <label class="radio-label">
-        <input type="radio" name="output_mode" value="custom_folder"
-          checked={$settings.output_mode === "custom_folder"}
-          on:change={() => settings.save({ ...$settings, output_mode: "custom_folder" })} />
+        <input type="radio" name="output_mode" bind:group={outputMode} value="custom_folder"
+          on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
         Custom folder
       </label>
       {#if $settings.output_mode === "custom_folder"}
@@ -125,15 +129,13 @@
     <div class="field">
       <div class="field-label">File Naming</div>
       <label class="radio-label">
-        <input type="radio" name="naming" value="suffix"
-          checked={$settings.naming === "suffix"}
-          on:change={() => settings.save({ ...$settings, naming: "suffix" })} />
+        <input type="radio" name="naming" bind:group={naming} value="suffix"
+          on:change={() => settings.save({ ...$settings, naming })} />
         Add <code>_compressed</code> suffix
       </label>
       <label class="radio-label">
-        <input type="radio" name="naming" value="overwrite"
-          checked={$settings.naming === "overwrite"}
-          on:change={() => settings.save({ ...$settings, naming: "overwrite" })} />
+        <input type="radio" name="naming" bind:group={naming} value="overwrite"
+          on:change={() => settings.save({ ...$settings, naming })} />
         Overwrite original
       </label>
     </div>
