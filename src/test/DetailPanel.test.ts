@@ -8,8 +8,12 @@ import { settings } from "$lib/stores/settingsStore";
 import DetailPanel from "$lib/components/DetailPanel.svelte";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+vi.mock("@tauri-apps/plugin-dialog", () => ({
+  open: vi.fn().mockResolvedValue(null),
+}));
 
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 
 describe("DetailPanel", () => {
   beforeEach(async () => {
@@ -105,5 +109,18 @@ describe("DetailPanel", () => {
   it("does not show Choose button when output mode is same_as_source", () => {
     render(DetailPanel);
     expect(screen.queryByRole("button", { name: /choose/i })).not.toBeInTheDocument();
+  });
+
+  it("pickFolder saves the selected folder path immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    // Switch to custom_folder mode so Choose… button appears
+    await user.click(screen.getByRole("radio", { name: /custom folder/i }));
+    vi.clearAllMocks();
+    vi.mocked(open).mockResolvedValueOnce("/Users/me/Documents");
+    await user.click(screen.getByRole("button", { name: /choose/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ output_folder: "/Users/me/Documents" }),
+    });
   });
 });
