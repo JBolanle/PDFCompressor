@@ -14,7 +14,13 @@ pub const MENU_IDS: &[&str] = &[
 
 pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry)> {
     // ── App menu (compress[pdf]) ──────────────────────────────────────────
-    let about      = PredefinedMenuItem::about(app, Some("About compress[pdf]"), Some(AboutMetadata::default()))?;
+    let about      = PredefinedMenuItem::about(app, Some("About compress[pdf]"), Some(AboutMetadata {
+        name:    Some("compress[pdf]".to_string()),
+        version: Some("1.1.0".to_string()),
+        website: Some("https://jumoke.dev".to_string()),
+        comments: Some("A fast, offline PDF compressor for macOS.".to_string()),
+        ..Default::default()
+    }))?;
     let hide       = PredefinedMenuItem::hide(app, Some("Hide compress[pdf]"))?;
     let hide_others = PredefinedMenuItem::hide_others(app, None)?;
     let show_all   = PredefinedMenuItem::show_all(app, None)?;
