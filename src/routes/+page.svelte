@@ -87,7 +87,7 @@
 
   $: syncMenu("reveal-in-finder", selectedFile?.status === "done");
   $: syncMenu("clear-queue", $queue.length > 0);
-  $: syncMenu("compress", get(pendingCount) > 0 && !isCompressing);
+  $: syncMenu("compress", $pendingCount > 0 && !isCompressing);
   $: syncMenu("reset-selected", selectedFile?.status === "done" || selectedFile?.status === "error");
 
   // ── menu event listeners ──────────────────────────────────────────────────
