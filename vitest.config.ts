@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     conditions: ["browser"],
     alias: {
-      "@tauri-apps/plugin-dialog": "/Users/k4iju/Projects/PDFCompressor/src/lib/__mocks__/tauri-plugin-dialog.ts",
+      "@tauri-apps/plugin-dialog": "/Users/k4iju/Projects/PDFCompressor/src/lib/mocks/tauri-plugin-dialog.ts",
     },
   },
 

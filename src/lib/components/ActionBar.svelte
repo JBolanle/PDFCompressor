@@ -5,6 +5,7 @@
   import { onDestroy } from "svelte";
   import { queue, pendingCount } from "$lib/stores/queueStore";
   import { settings } from "$lib/stores/settingsStore";
+  import { toast } from "$lib/stores/toastStore";
 
   interface ProgressEvent {
     file: string;
@@ -34,7 +35,8 @@
         queue.updateStatus(payload.file, "done", { compressedSize });
       } else if (payload.status === "error") {
         queue.updateStatus(payload.file, "error", { errorMsg: payload.error_msg });
-        // Toast notification handled in Task 17
+        const name = payload.file.split("/").pop() ?? payload.file;
+        toast.show(`${name}: ${payload.error_msg ?? "Compression failed"}`);
       } else {
         queue.updateStatus(payload.file, "processing");
       }
