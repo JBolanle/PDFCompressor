@@ -8,7 +8,6 @@
   import { settings } from "$lib/stores/settingsStore";
 
   let showSettings = false;
-  let selectedFileId: string | null = null;
 
   onMount(() => settings.load());
 </script>
@@ -19,8 +18,8 @@
   </div>
 
   <div class="content">
-    <Sidebar bind:selectedFileId />
-    <DetailPanel {selectedFileId} />
+    <Sidebar />
+    <DetailPanel />
   </div>
 
   <ActionBar />

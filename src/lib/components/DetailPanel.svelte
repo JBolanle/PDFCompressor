@@ -2,10 +2,9 @@
   import { derived } from "svelte/store";
   import { invoke } from "@tauri-apps/api/core";
   import { queue, type Preset } from "$lib/stores/queueStore";
+  import { selectedFileId } from "$lib/stores/selectionStore";
 
-  export let selectedFileId: string | null;
-
-  const selectedFile = derived(queue, ($q) => $q.find((e) => e.id === selectedFileId) ?? null);
+  const selectedFile = derived([queue, selectedFileId], ([$q, $id]) => $q.find((e) => e.id === $id) ?? null);
 
   function formatSize(bytes: number): string {
     if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { queue } from "$lib/stores/queueStore";
-
-  export let selectedFileId: string | null;
+  import { selectedFileId } from "$lib/stores/selectionStore";
 
   let isDragOver = false;
 
@@ -66,10 +65,10 @@
       {#each $queue as entry (entry.id)}
         <li
           class="file-row"
-          class:selected={selectedFileId === entry.id}
-          on:click={() => (selectedFileId = entry.id)}
+          class:selected={$selectedFileId === entry.id}
+          on:click={() => selectedFileId.set(entry.id)}
           tabindex="0"
-          on:keydown={(e) => e.key === "Enter" && (selectedFileId = entry.id)}
+          on:keydown={(e) => e.key === "Enter" && selectedFileId.set(entry.id)}
         >
           <span class="status-icon" class:done={entry.status === "done"} class:error={entry.status === "error"} class:processing={entry.status === "processing"}>
             {#if entry.status === "done"}✓{:else if entry.status === "error"}✕{:else if entry.status === "processing"}◌{:else}·{/if}
