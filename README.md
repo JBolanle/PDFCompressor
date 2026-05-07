@@ -61,4 +61,4 @@ cd src-tauri && cargo test      # Rust
 
 Licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
-This software bundles [Ghostscript](https://www.ghostscript.com/), Copyright © Artifex Software, Inc., licensed under AGPL v3. Source code is available at https://github.com/JBolanle/PDFCompressor/
+This software bundles [Ghostscript](https://www.ghostscript.com/), Copyright © Artifex Software, Inc., licensed under AGPL v3. Source code is available at https://github.com/ArtifexSoftware/ghostpdl
