@@ -57,8 +57,10 @@ jobs:
           echo "DMG: $DMG_PATH"
 
       - name: Create draft GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          generate_release_notes: true
-          files: ${{ steps.dmg.outputs.path }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --draft \
+            --generate-notes \
+            "${{ steps.dmg.outputs.path }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
