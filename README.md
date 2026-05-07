@@ -16,6 +16,21 @@ compress[pdf] compresses PDF files entirely on your Mac — no account, no inter
 
 Download the latest release from the [Releases page](https://github.com/JBolanle/PDFCompressor/releases).
 
+### First launch
+
+compress[pdf] is an unsigned open-source app — macOS will block it the first time you open it. To allow it:
+
+1. Open the DMG and drag the app to Applications
+2. Double-click the app — macOS shows "Apple cannot verify this app", click **Done**
+3. Open **System Settings → Privacy & Security**, scroll down, click **Open Anyway**
+4. Click **Open** in the confirmation dialog — the app opens and is trusted from then on
+
+Or if you prefer the terminal:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/compress[pdf].app"
+```
+
 ## Using the app
 
 1. Add files via drag-and-drop or the File menu
