@@ -25,7 +25,7 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
         credits:   Some(concat!(
             "A fast, offline PDF compressor for macOS.\n\n",
             "This software bundles Ghostscript, \u{00A9} Artifex Software, Inc. (AGPL v3).\n",
-            "Source code: https://github.com/JBolanle/PDFCompressor/\n\n",
+            "Source code: https://github.com/ArtifexSoftware/ghostpdl\n\n",
             "This program comes with ABSOLUTELY NO WARRANTY. ",
             "It is free software; you may redistribute it under the terms of the AGPL v3."
         ).to_string()),
