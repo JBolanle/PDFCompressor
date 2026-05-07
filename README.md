@@ -14,7 +14,7 @@
 
 ## What it does
 
-compress[pdf] compresses PDF files entirely on your Mac — no account, no internet connection, no file size limits. Everything stays on your machine; nothing is uploaded anywhere.
+**compress[pdf]** compresses PDF files entirely on your Mac — no account, no internet connection, no file size limits. Everything stays on your machine; nothing is uploaded anywhere.
 
 ## Download
 
