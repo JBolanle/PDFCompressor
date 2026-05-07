@@ -1,0 +1,53 @@
+Third-Party Licenses
+====================
+
+This project includes the following third-party software:
+
+--------------------------------------------------------------------------------
+Ghostscript
+  License: GNU Affero General Public License v3.0 (AGPL-3.0)
+  Copyright: Copyright (C) Artifex Software, Inc. All Rights Reserved.
+  Source:    https://www.ghostscript.com/
+  Notes:     Bundled as a precompiled sidecar binary. This is the primary
+             reason the project as a whole is licensed under AGPL-3.0.
+--------------------------------------------------------------------------------
+Tauri 2 (tauri, tauri-build, tauri-plugin-*)
+  License: MIT OR Apache-2.0
+  Copyright: Copyright (c) 2019-present Tauri Programme
+  Source:    https://tauri.app/
+--------------------------------------------------------------------------------
+Svelte / SvelteKit
+  License: MIT
+  Copyright: Copyright (c) 2016-present Svelte contributors
+  Source:    https://svelte.dev/
+--------------------------------------------------------------------------------
+Vite
+  License: MIT
+  Copyright: Copyright (c) 2019-present Evan You & Vite contributors
+  Source:    https://vitejs.dev/
+--------------------------------------------------------------------------------
+TypeScript
+  License: Apache-2.0
+  Copyright: Copyright (c) Microsoft Corporation. All rights reserved.
+  Source:    https://www.typescriptlang.org/
+--------------------------------------------------------------------------------
+Vitest
+  License: MIT
+  Copyright: Copyright (c) 2021-present Vitest contributors
+  Source:    https://vitest.dev/
+--------------------------------------------------------------------------------
+serde / serde_json
+  License: MIT OR Apache-2.0
+  Copyright: Copyright (c) 2014 The Rust Project Developers
+  Source:    https://serde.rs/
+--------------------------------------------------------------------------------
+tempfile (dev dependency)
+  License: MIT OR Apache-2.0
+  Copyright: Copyright (c) 2015 Steven Allen
+  Source:    https://crates.io/crates/tempfile
+--------------------------------------------------------------------------------
+@testing-library/svelte, @testing-library/jest-dom, @testing-library/user-event
+  License: MIT
+  Copyright: Copyright (c) 2018 Kent C. Dodds
+  Source:    https://testing-library.com/
+--------------------------------------------------------------------------------
