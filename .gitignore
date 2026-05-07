@@ -1,5 +1,8 @@
 .DS_Store
 node_modules
+# GS sidecar binaries are tracked via `git add -f` — this rule prevents
+# accidental addition of intermediate build outputs. To update a binary, use:
+# cp <new-binary> src-tauri/binaries/gs-<target-triple> && git add -f src-tauri/binaries/gs-<target-triple>
 src-tauri/binaries/gs-*
 /build
 /.svelte-kit
