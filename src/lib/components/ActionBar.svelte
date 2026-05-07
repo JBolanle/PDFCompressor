@@ -4,7 +4,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { onDestroy, onMount } from "svelte";
   import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
-  import { queue, pendingCount, allFinished } from "$lib/stores/queueStore";
+  import { queue, pendingCount } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
   import { toast } from "$lib/stores/toastStore";
@@ -118,7 +118,7 @@
 </script>
 
 <div class="action-bar">
-  {#if $allFinished}
+  {#if $queue.length > 0 && !isCompressing}
     <button class="clear-btn" on:click={clearQueue}>Clear queue</button>
   {/if}
   {#if $doneCount > 0 || $errorCount > 0}

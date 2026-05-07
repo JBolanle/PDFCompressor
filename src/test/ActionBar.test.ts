@@ -29,7 +29,7 @@ describe("ActionBar", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     queue.addFile({ path: "/tmp/b.pdf", name: "b.pdf", size: 2000 });
     render(ActionBar);
-    const btn = screen.getByRole("button");
+    const btn = screen.getByRole("button", { name: /compress/i });
     expect(btn).not.toBeDisabled();
     expect(btn.textContent).toMatch(/2/);
   });
@@ -53,10 +53,10 @@ describe("ActionBar", () => {
     expect(screen.queryByRole("button", { name: /clear queue/i })).not.toBeInTheDocument();
   });
 
-  it("does not show Clear queue button while files are still pending", () => {
+  it("shows Clear queue button as soon as a file is added", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     render(ActionBar);
-    expect(screen.queryByRole("button", { name: /clear queue/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /clear queue/i })).toBeInTheDocument();
   });
 
   it("sends a notification after compression completes with done files", async () => {
