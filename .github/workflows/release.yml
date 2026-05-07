@@ -42,6 +42,10 @@ jobs:
         id: dmg
         run: |
           DMG_PATH=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" -type f | head -1)
+          if [ -z "$DMG_PATH" ]; then
+            echo "ERROR: No DMG file found after build"
+            exit 1
+          fi
           echo "path=$DMG_PATH" >> "$GITHUB_OUTPUT"
           echo "DMG: $DMG_PATH"
 
