@@ -8,6 +8,10 @@
 
 **Compress PDFs locally. No uploads, no limits, no nonsense.**
 
+<p align="center">
+  <img src="docs/screenshots/main-window.png" width="720" alt="compress[pdf] main window" />
+</p>
+
 ## What it does
 
 compress[pdf] compresses PDF files entirely on your Mac — no account, no internet connection, no file size limits. It's a straightforward replacement for cloud tools like iLovePDF and Smallpdf for everyday use, without sending your files anywhere.
