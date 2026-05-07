@@ -15,9 +15,18 @@ pub const MENU_IDS: &[&str] = &[
 pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry)> {
     // ── App menu (compress[pdf]) ──────────────────────────────────────────
     let about      = PredefinedMenuItem::about(app, Some("About compress[pdf]"), Some(AboutMetadata {
-        name:    Some("compress[pdf]".to_string()),
-        version: Some("1.1.0".to_string()),
-        credits: Some("A fast, offline PDF compressor for macOS.\n\njumoke.dev".to_string()),
+        name:      Some("compress[pdf]".to_string()),
+        version:   Some("1.1.0".to_string()),
+        copyright: Some("Copyright \u{00A9} 2026 Olajumoke Bolanle".to_string()),
+        license:   Some("GNU Affero General Public License v3.0".to_string()),
+        website:   Some("https://github.com/JBolanle/PDFCompressor/".to_string()),
+        credits:   Some(concat!(
+            "A fast, offline PDF compressor for macOS.\n\n",
+            "This software bundles Ghostscript, \u{00A9} Artifex Software, Inc. (AGPL v3).\n",
+            "Source code: https://github.com/JBolanle/PDFCompressor/\n\n",
+            "This program comes with ABSOLUTELY NO WARRANTY. ",
+            "It is free software; you may redistribute it under the terms of the AGPL v3."
+        ).to_string()),
         ..Default::default()
     }))?;
     let hide       = PredefinedMenuItem::hide(app, Some("Hide compress[pdf]"))?;
