@@ -5,7 +5,6 @@ pub mod menu;
 pub mod path_resolver;
 pub mod settings;
 
-
 #[derive(serde::Serialize)]
 struct FileMeta {
     size: u64,
@@ -37,7 +36,10 @@ pub fn check_path_writable(path: String) -> bool {
     let dir = std::path::Path::new(&path);
     let test_path = dir.join(".pdf_compressor_write_test");
     match std::fs::File::create(&test_path) {
-        Ok(_) => { let _ = std::fs::remove_file(&test_path); true }
+        Ok(_) => {
+            let _ = std::fs::remove_file(&test_path);
+            true
+        }
         Err(_) => false,
     }
 }
@@ -50,9 +52,9 @@ fn check_path_writable_cmd(path: String) -> bool {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use crate::compress::compress_files;
-    use crate::settings::{get_settings, save_settings};
     use crate::finder::reveal_in_finder;
     use crate::menu::{build_menu, set_menu_item_enabled};
+    use crate::settings::{get_settings, save_settings};
     use tauri::{Emitter, Manager};
 
     tauri::Builder::default()
@@ -65,12 +67,12 @@ pub fn run() {
             app.set_menu(menu)?;
             app.handle().on_menu_event(|app, event| {
                 let name = match event.id().as_ref() {
-                    "add-files"        => "menu:add-files",
+                    "add-files" => "menu:add-files",
                     "reveal-in-finder" => "menu:reveal-in-finder",
-                    "clear-queue"      => "menu:clear-queue",
-                    "compress"         => "menu:compress",
-                    "reset-selected"   => "menu:reset-selected",
-                    _                  => return,
+                    "clear-queue" => "menu:clear-queue",
+                    "compress" => "menu:compress",
+                    "reset-selected" => "menu:reset-selected",
+                    _ => return,
                 };
                 let _ = app.emit(name, ());
             });
@@ -147,11 +149,15 @@ mod lib_tests {
 
     #[test]
     fn check_path_writable_returns_true_for_tmp() {
-        assert!(check_path_writable(std::env::temp_dir().to_str().unwrap().to_string()));
+        assert!(check_path_writable(
+            std::env::temp_dir().to_str().unwrap().to_string()
+        ));
     }
 
     #[test]
     fn check_path_writable_returns_false_for_nonexistent() {
-        assert!(!check_path_writable("/nonexistent/path/that/cannot/exist".to_string()));
+        assert!(!check_path_writable(
+            "/nonexistent/path/that/cannot/exist".to_string()
+        ));
     }
 }

@@ -1,5 +1,5 @@
+use crate::settings::{NamingMode, OutputMode, Settings};
 use std::path::PathBuf;
-use crate::settings::{Settings, OutputMode, NamingMode};
 
 pub fn resolve_output_path(input: &str, settings: &Settings) -> PathBuf {
     use std::path::Path;
@@ -14,7 +14,7 @@ pub fn resolve_output_path(input: &str, settings: &Settings) -> PathBuf {
 
     match &settings.naming {
         NamingMode::Overwrite => dir.join(format!("{}.{}", stem, ext)),
-        NamingMode::Suffix    => dir.join(format!("{}_compressed.{}", stem, ext)),
+        NamingMode::Suffix => dir.join(format!("{}_compressed.{}", stem, ext)),
     }
 }
 
@@ -33,7 +33,10 @@ mod tests {
     #[test]
     fn same_source_suffix_appends_compressed() {
         let result = resolve_output_path("/home/user/docs/report.pdf", &same_source_suffix());
-        assert_eq!(result, PathBuf::from("/home/user/docs/report_compressed.pdf"));
+        assert_eq!(
+            result,
+            PathBuf::from("/home/user/docs/report_compressed.pdf")
+        );
     }
 
     #[test]
@@ -44,7 +47,10 @@ mod tests {
             naming: NamingMode::Suffix,
         };
         let result = resolve_output_path("/home/user/docs/report.pdf", &settings);
-        assert_eq!(result, PathBuf::from("/home/user/output/report_compressed.pdf"));
+        assert_eq!(
+            result,
+            PathBuf::from("/home/user/output/report_compressed.pdf")
+        );
     }
 
     #[test]

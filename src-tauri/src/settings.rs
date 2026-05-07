@@ -34,7 +34,8 @@ impl Default for Settings {
 }
 
 pub fn settings_file_path(app: &tauri::AppHandle) -> PathBuf {
-    app.path().app_data_dir()
+    app.path()
+        .app_data_dir()
         .expect("app data dir")
         .join("settings.json")
 }
