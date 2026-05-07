@@ -38,10 +38,12 @@
       <span class="empty-sub">or use "+ Add files" below</span>
     </div>
   {:else}
-    <ul class="file-list">
+    <ul class="file-list" role="listbox" aria-label="PDF files">
       {#each $queue as entry (entry.id)}
         <li
           class="file-row"
+          role="option"
+          aria-selected={$selectedFileId === entry.id}
           class:selected={$selectedFileId === entry.id}
           on:click={() => selectedFileId.set(entry.id)}
           tabindex="0"
