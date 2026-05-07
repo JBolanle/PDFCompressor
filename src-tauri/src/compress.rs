@@ -28,6 +28,7 @@ pub fn build_gs_args(
     let dpi = dpi_override.unwrap_or(default_dpi);
     vec![
         "-sDEVICE=pdfwrite".into(),
+        "-dSAFER".into(),
         "-dCompatibilityLevel=1.4".into(),
         format!("-dPDFSETTINGS={}", pdf_settings),
         "-dNOPAUSE".into(),
@@ -36,6 +37,7 @@ pub fn build_gs_args(
         format!("-dColorImageResolution={}", dpi),
         format!("-dGrayImageResolution={}", dpi),
         format!("-sOutputFile={}", output),
+        "--".into(),
         input.into(),
     ]
 }
@@ -212,6 +214,23 @@ mod tests {
         let args = build_gs_args(Preset::Balanced, None, "/tmp/in.pdf", "/tmp/out.pdf");
         assert!(args.contains(&"-sOutputFile=/tmp/out.pdf".to_string()));
         assert_eq!(args.last().unwrap(), "/tmp/in.pdf");
+    }
+
+    #[test]
+    fn safer_flag_is_present() {
+        let args = build_gs_args(Preset::Balanced, None, "/in.pdf", "/out.pdf");
+        assert!(args.contains(&"-dSAFER".to_string()));
+    }
+
+    #[test]
+    fn argv_separator_precedes_input_so_dash_filenames_are_not_options() {
+        let args = build_gs_args(Preset::Balanced, None, "-dEvil.pdf", "/out.pdf");
+        let sep_idx = args
+            .iter()
+            .position(|a| a == "--")
+            .expect("expected `--` separator before input");
+        assert_eq!(args.last().unwrap(), "-dEvil.pdf");
+        assert_eq!(sep_idx, args.len() - 2);
     }
 
     #[test]

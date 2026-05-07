@@ -40,6 +40,22 @@ pub fn settings_file_path(app: &tauri::AppHandle) -> PathBuf {
         .join("settings.json")
 }
 
+pub fn validate_settings(settings: &Settings) -> Result<(), String> {
+    if let Some(folder) = settings.output_folder.as_deref() {
+        if folder.chars().any(|c| c.is_control()) {
+            return Err("output_folder contains control characters".into());
+        }
+        let path = Path::new(folder);
+        if !path.is_absolute() {
+            return Err("output_folder must be an absolute path".into());
+        }
+        if !path.is_dir() {
+            return Err("output_folder must be an existing directory".into());
+        }
+    }
+    Ok(())
+}
+
 pub fn save_settings_to_path(settings: &Settings, path: &Path) -> Result<(), String> {
     let json = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
     std::fs::write(path, json).map_err(|e| e.to_string())
@@ -58,6 +74,7 @@ pub fn get_settings(app: tauri::AppHandle) -> Settings {
 
 #[tauri::command]
 pub fn save_settings(app: tauri::AppHandle, settings: Settings) -> Result<(), String> {
+    validate_settings(&settings)?;
     let path = settings_file_path(&app);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -69,6 +86,70 @@ pub fn save_settings(app: tauri::AppHandle, settings: Settings) -> Result<(), St
 mod tests {
     use super::*;
     use tempfile::TempDir;
+
+    #[test]
+    fn validate_accepts_none_output_folder() {
+        let s = Settings {
+            output_mode: OutputMode::SameAsSource,
+            output_folder: None,
+            naming: NamingMode::Suffix,
+        };
+        assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn validate_accepts_existing_absolute_directory() {
+        let tmp = TempDir::new().unwrap();
+        let s = Settings {
+            output_mode: OutputMode::CustomFolder,
+            output_folder: Some(tmp.path().to_string_lossy().into_owned()),
+            naming: NamingMode::Suffix,
+        };
+        assert!(validate_settings(&s).is_ok());
+    }
+
+    #[test]
+    fn validate_rejects_relative_output_folder() {
+        let s = Settings {
+            output_mode: OutputMode::CustomFolder,
+            output_folder: Some("relative/path".into()),
+            naming: NamingMode::Suffix,
+        };
+        assert!(validate_settings(&s).is_err());
+    }
+
+    #[test]
+    fn validate_rejects_nonexistent_output_folder() {
+        let s = Settings {
+            output_mode: OutputMode::CustomFolder,
+            output_folder: Some("/nonexistent/path/that/should/not/exist/xyz".into()),
+            naming: NamingMode::Suffix,
+        };
+        assert!(validate_settings(&s).is_err());
+    }
+
+    #[test]
+    fn validate_rejects_output_folder_pointing_at_file() {
+        let tmp = TempDir::new().unwrap();
+        let file = tmp.path().join("a.txt");
+        std::fs::write(&file, "x").unwrap();
+        let s = Settings {
+            output_mode: OutputMode::CustomFolder,
+            output_folder: Some(file.to_string_lossy().into_owned()),
+            naming: NamingMode::Suffix,
+        };
+        assert!(validate_settings(&s).is_err());
+    }
+
+    #[test]
+    fn validate_rejects_output_folder_with_control_chars() {
+        let s = Settings {
+            output_mode: OutputMode::CustomFolder,
+            output_folder: Some("/tmp/has\nnewline".into()),
+            naming: NamingMode::Suffix,
+        };
+        assert!(validate_settings(&s).is_err());
+    }
 
     #[test]
     fn settings_round_trip() {
