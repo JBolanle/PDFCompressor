@@ -17,8 +17,7 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
     let about      = PredefinedMenuItem::about(app, Some("About compress[pdf]"), Some(AboutMetadata {
         name:    Some("compress[pdf]".to_string()),
         version: Some("1.1.0".to_string()),
-        website: Some("https://jumoke.dev".to_string()),
-        comments: Some("A fast, offline PDF compressor for macOS.".to_string()),
+        credits: Some("A fast, offline PDF compressor for macOS.\n\njumoke.dev".to_string()),
         ..Default::default()
     }))?;
     let hide       = PredefinedMenuItem::hide(app, Some("Hide compress[pdf]"))?;
