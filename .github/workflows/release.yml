@@ -45,16 +45,18 @@ jobs:
       - name: Build universal app
         run: npm run tauri build -- --target universal-apple-darwin
 
-      - name: Find DMG path
+      - name: Rename DMG to bracket-free filename
         id: dmg
         run: |
-          DMG_PATH=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" -type f | head -1)
-          if [ -z "$DMG_PATH" ]; then
+          SRC=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" -type f | head -1)
+          if [ -z "$SRC" ]; then
             echo "ERROR: No DMG file found after build"
             exit 1
           fi
-          echo "path=$DMG_PATH" >> "$GITHUB_OUTPUT"
-          echo "DMG: $DMG_PATH"
+          DEST="compress-pdf_${{ github.ref_name }}_universal.dmg"
+          cp "$SRC" "$DEST"
+          echo "path=$DEST" >> "$GITHUB_OUTPUT"
+          echo "DMG: $DEST"
 
       - name: Create draft GitHub Release
         run: |
