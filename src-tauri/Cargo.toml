@@ -2,7 +2,7 @@
 name = "pdf-compressor"
 version = "0.1.0"
 description = "Local macOS PDF compressor"
-authors = ["k4iju"]
+authors = ["Olajumoke Bolanle"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
 
