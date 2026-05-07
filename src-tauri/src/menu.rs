@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
+use tauri::include_image;
 use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 pub struct MenuRegistry(pub Mutex<HashMap<String, MenuItem<tauri::Wry>>>);
@@ -15,6 +16,7 @@ pub const MENU_IDS: &[&str] = &[
 pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry)> {
     // ── App menu (compress[pdf]) ──────────────────────────────────────────
     let about      = PredefinedMenuItem::about(app, Some("About compress[pdf]"), Some(AboutMetadata {
+        icon:      Some(include_image!("icons/icon.png")),
         name:      Some("compress[pdf]".to_string()),
         version:   Some("1.1.0".to_string()),
         copyright: Some("Copyright \u{00A9} 2026 Olajumoke Bolanle".to_string()),
