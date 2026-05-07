@@ -98,6 +98,13 @@
   function clearQueue() {
     queue.clear();
     selectedFileId.set(null);
+    if (isCompressing) {
+      isCompressing = false;
+      compressTotal = 0;
+      compressDone = 0;
+      unlisten?.();
+      unlisten = null;
+    }
   }
 
   onMount(() => {
