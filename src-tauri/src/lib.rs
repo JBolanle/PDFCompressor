@@ -50,7 +50,7 @@ pub fn run() {
     use crate::compress::compress_files;
     use crate::finder::reveal_in_finder;
     use crate::menu::{build_menu, set_menu_item_enabled};
-    use crate::settings::{get_settings, save_settings};
+    use crate::settings::{get_settings, load_settings_from_path, save_settings, settings_file_path};
     use crate::updater::check_for_update;
     use tauri::{Emitter, Manager};
 
@@ -60,8 +60,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
-            let (menu, registry) = build_menu(app.handle())?;
+            let (menu, registry, auto_update_item) = build_menu(app.handle())?;
             app.set_menu(menu)?;
+
+            let saved = load_settings_from_path(&settings_file_path(app.handle()))
+                .unwrap_or_default();
+            auto_update_item.set_checked(saved.auto_update_check).ok();
+
             app.handle().on_menu_event(|app, event| {
                 let name = match event.id().as_ref() {
                     "add-files" => "menu:add-files",
@@ -70,6 +75,7 @@ pub fn run() {
                     "compress" => "menu:compress",
                     "reset-selected" => "menu:reset-selected",
                     "check-for-update" => "menu:check-for-update",
+                    "check-for-update-auto" => "menu:check-for-update-auto",
                     _ => return,
                 };
                 let _ = app.emit(name, ());
