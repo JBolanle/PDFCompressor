@@ -87,6 +87,20 @@
     invoke("set_menu_item_enabled", { id, enabled }).catch(() => {});
   }
 
+  // ── update check helper ───────────────────────────────────────────────────
+
+  async function checkAndShowUpdateToast(showUpToDate = false) {
+    const version: string | null = await invoke("check_for_update");
+    if (version) {
+      toast.showPersistent(`v${version} is available`, {
+        label: "Download",
+        handler: () => openUrl("https://github.com/JBolanle/PDFCompressor/releases/latest"),
+      });
+    } else if (showUpToDate) {
+      toast.show("You're on the latest version");
+    }
+  }
+
   $: syncMenu("reveal-in-finder", selectedFile?.status === "done");
   $: syncMenu("clear-queue", $queue.length > 0);
   $: syncMenu("compress", $pendingCount > 0 && !isCompressing);
@@ -100,13 +114,7 @@
     settings.load();
     window.addEventListener("keydown", onKeyDown);
 
-    const version: string | null = await invoke("check_for_update");
-    if (version) {
-      toast.showPersistent(`v${version} is available`, {
-        label: "Download",
-        handler: () => openUrl("https://github.com/JBolanle/PDFCompressor/releases/latest"),
-      });
-    }
+    await checkAndShowUpdateToast();
 
     unlisteners = await Promise.all([
       listen("menu:add-files",        () => addFiles()),
@@ -114,17 +122,7 @@
       listen("menu:reveal-in-finder", () => revealSelected()),
       listen("menu:clear-queue",      () => clearAll()),
       listen("menu:reset-selected",   () => resetSelected()),
-      listen("menu:check-for-update", async () => {
-        const v: string | null = await invoke("check_for_update");
-        if (v) {
-          toast.showPersistent(`v${v} is available`, {
-            label: "Download",
-            handler: () => openUrl("https://github.com/JBolanle/PDFCompressor/releases/latest"),
-          });
-        } else {
-          toast.show("You're on the latest version");
-        }
-      }),
+      listen("menu:check-for-update", () => checkAndShowUpdateToast(true)),
     ]);
   });
 
