@@ -1,5 +1,8 @@
 <script lang="ts">
   import { get, derived } from "svelte/store";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { onDestroy, onMount } from "svelte";
@@ -124,7 +127,7 @@
   {/if}
   {#if $doneCount > 0 || $errorCount > 0}
     <div class="status-summary">
-      {#if $doneCount > 0}<span class="done-count">{$doneCount} done</span>{/if}
+      {#if $doneCount > 0}<span class="done-count" in:scale={{ duration: reducedMotion ? 0 : 200, start: 0.6, easing: cubicOut }}>{$doneCount} done</span>{/if}
       {#if $errorCount > 0}<span class="error-count">{$errorCount} error{$errorCount > 1 ? "s" : ""}</span>{/if}
     </div>
   {/if}
@@ -147,8 +150,13 @@
 
 <style>
   .action-bar { height: var(--action-bar-height); padding: 8px 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .compress-btn { flex: 1; height: 36px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; font-family: var(--font-ui); cursor: pointer; transition: background 0.1s, opacity 0.15s; }
-  .compress-btn:hover:not(:disabled) { background: var(--accent-hover); }
+  .compress-btn { flex: 1; height: 36px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; font-family: var(--font-ui); cursor: pointer; transition: background 0.1s, opacity 0.15s, transform 0.08s, box-shadow 0.12s; }
+  .compress-btn:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 2px 10px oklch(59% 0.17 251 / 0.38); transform: translateY(-1px); }
+  .compress-btn:active:not(:disabled) { transform: scale(0.97); box-shadow: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .compress-btn:hover:not(:disabled) { transform: none; }
+    .compress-btn { transition: background 0.1s, opacity 0.15s; }
+  }
   .compress-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .clear-btn { height: 36px; padding: 0 14px; background: none; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
   .clear-btn:hover { background: var(--bg-tertiary); }
