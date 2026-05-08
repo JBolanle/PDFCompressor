@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::include_image;
-use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{AboutMetadata, CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 pub struct MenuRegistry(pub Mutex<HashMap<String, MenuItem<tauri::Wry>>>);
 
@@ -14,7 +14,9 @@ pub const MENU_IDS: &[&str] = &[
     "check-for-update",
 ];
 
-pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry)> {
+pub fn build_menu(
+    app: &tauri::AppHandle,
+) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry, CheckMenuItem<tauri::Wry>)> {
     // ── App menu (compress[pdf]) ──────────────────────────────────────────
     let about = PredefinedMenuItem::about(
         app,
@@ -115,6 +117,15 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
     )?;
 
     // ── Help menu ─────────────────────────────────────────────────────────
+    let auto_update = CheckMenuItem::with_id(
+        app,
+        "check-for-update-auto",
+        "Check for Updates Automatically",
+        true,
+        false,
+        None::<&str>,
+    )?;
+    let help_sep = PredefinedMenuItem::separator(app)?;
     let check_for_updates = MenuItem::with_id(
         app,
         "check-for-update",
@@ -123,8 +134,13 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
         None::<&str>,
     )?;
 
-    let help_menu =
-        Submenu::with_id_and_items(app, "help-menu", "Help", true, &[&check_for_updates])?;
+    let help_menu = Submenu::with_id_and_items(
+        app,
+        "help-menu",
+        "Help",
+        true,
+        &[&auto_update, &help_sep, &check_for_updates],
+    )?;
 
     let menu = Menu::with_items(
         app,
@@ -139,7 +155,7 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
     map.insert("reset-selected".to_string(), reset);
     map.insert("check-for-update".to_string(), check_for_updates);
 
-    Ok((menu, MenuRegistry(Mutex::new(map))))
+    Ok((menu, MenuRegistry(Mutex::new(map)), auto_update))
 }
 
 #[tauri::command]

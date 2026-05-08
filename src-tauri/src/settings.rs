@@ -21,6 +21,8 @@ pub struct Settings {
     pub output_mode: OutputMode,
     pub output_folder: Option<String>,
     pub naming: NamingMode,
+    #[serde(default)]
+    pub auto_update_check: bool,
 }
 
 impl Default for Settings {
@@ -29,6 +31,7 @@ impl Default for Settings {
             output_mode: OutputMode::SameAsSource,
             output_folder: None,
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         }
     }
 }
@@ -93,6 +96,7 @@ mod tests {
             output_mode: OutputMode::SameAsSource,
             output_folder: None,
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         };
         assert!(validate_settings(&s).is_ok());
     }
@@ -104,6 +108,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some(tmp.path().to_string_lossy().into_owned()),
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         };
         assert!(validate_settings(&s).is_ok());
     }
@@ -114,6 +119,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("relative/path".into()),
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -124,6 +130,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/nonexistent/path/that/should/not/exist/xyz".into()),
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -137,6 +144,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some(file.to_string_lossy().into_owned()),
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -147,6 +155,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/tmp/has\nnewline".into()),
             naming: NamingMode::Suffix,
+            auto_update_check: false,
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -160,6 +169,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/my/folder".into()),
             naming: NamingMode::Overwrite,
+            auto_update_check: false,
         };
 
         save_settings_to_path(&original, &path).unwrap();
@@ -183,5 +193,37 @@ mod tests {
         assert!(matches!(s.output_mode, OutputMode::SameAsSource));
         assert!(s.output_folder.is_none());
         assert!(matches!(s.naming, NamingMode::Suffix));
+    }
+
+    #[test]
+    fn auto_update_check_defaults_to_false() {
+        let s = Settings::default();
+        assert!(!s.auto_update_check);
+    }
+
+    #[test]
+    fn auto_update_check_round_trips_as_true() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("settings.json");
+        let original = Settings {
+            auto_update_check: true,
+            ..Settings::default()
+        };
+        save_settings_to_path(&original, &path).unwrap();
+        let loaded = load_settings_from_path(&path).unwrap();
+        assert!(loaded.auto_update_check);
+    }
+
+    #[test]
+    fn auto_update_check_defaults_when_absent_from_json() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("settings.json");
+        std::fs::write(
+            &path,
+            r#"{"output_mode":"same_as_source","naming":"suffix"}"#,
+        )
+        .unwrap();
+        let loaded = load_settings_from_path(&path).unwrap();
+        assert!(!loaded.auto_update_check);
     }
 }

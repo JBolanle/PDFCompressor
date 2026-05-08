@@ -5,12 +5,14 @@ export interface AppSettings {
   output_mode: "same_as_source" | "custom_folder";
   output_folder: string | null;
   naming: "suffix" | "overwrite";
+  auto_update_check: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   output_mode: "same_as_source",
   output_folder: null,
   naming: "suffix",
+  auto_update_check: false,
 };
 
 function createSettingsStore() {
