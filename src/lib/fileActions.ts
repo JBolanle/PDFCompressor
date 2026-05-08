@@ -30,5 +30,5 @@ export async function addFiles(): Promise<void> {
 }
 
 export function revealInFinder(path: string): void {
-  invoke("reveal_in_finder", { path });
+  invoke("reveal_in_finder", { path }).catch(() => {});
 }

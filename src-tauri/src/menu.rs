@@ -175,10 +175,14 @@ mod tests {
         assert!(ids.contains("clear-queue"));
         assert!(ids.contains("compress"));
         assert!(ids.contains("reset-selected"));
+        assert!(ids.contains("check-for-update"));
     }
 
     #[test]
     fn menu_ids_sync_with_build_menu() {
+        // Note: build_menu requires AppHandle and cannot be called in unit tests.
+        // Instead we maintain a parallel list here that must be kept in sync with
+        // the map.insert calls in build_menu.
         // Hardcoded list of IDs that are inserted in build_menu's HashMap
         let build_menu_ids: &[&str] = &[
             "add-files",
