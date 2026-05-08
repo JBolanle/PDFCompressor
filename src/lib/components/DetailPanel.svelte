@@ -1,11 +1,11 @@
 <script lang="ts">
   import { derived } from "svelte/store";
-  import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
   import { formatBytes } from "$lib/notification";
+  import { revealInFinder } from "$lib/fileActions";
 
   const selectedFile = derived([queue, selectedFileId], ([$q, $id]) => $q.find((e) => e.id === $id) ?? null);
 
@@ -13,10 +13,6 @@
 
   function savingsPct(original: number, compressed: number): string {
     return `−${Math.round(((original - compressed) / original) * 100)}%`;
-  }
-
-  function revealInFinder(path: string) {
-    invoke("reveal_in_finder", { path });
   }
 
   function resetToCompress() {

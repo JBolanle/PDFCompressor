@@ -10,7 +10,7 @@
   import { settings } from "$lib/stores/settingsStore";
   import { queue, pendingCount } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
-  import { addFiles } from "$lib/fileActions";
+  import { addFiles, revealInFinder } from "$lib/fileActions";
   import { handleShortcut, type ShortcutState } from "$lib/shortcuts";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { toast } from "$lib/stores/toastStore";
@@ -22,7 +22,7 @@
 
   function revealSelected() {
     if (selectedFile?.status === "done") {
-      invoke("reveal_in_finder", { path: selectedFile.path });
+      revealInFinder(selectedFile.path);
     }
   }
 

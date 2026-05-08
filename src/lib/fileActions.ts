@@ -24,3 +24,7 @@ export async function addFiles(): Promise<void> {
   const list = Array.isArray(paths) ? paths : [paths];
   for (const path of list) await addPath(path);
 }
+
+export function revealInFinder(path: string): void {
+  invoke("reveal_in_finder", { path });
+}
