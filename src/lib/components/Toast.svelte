@@ -7,6 +7,9 @@
   {#each $toast as msg (msg.id)}
     <div class="toast" role="alert" in:fly={{ y: 10, duration: 200 }} out:fly={{ y: -4, duration: 150 }}>
       <span>{msg.message}</span>
+      {#if msg.action}
+        <button class="action" on:click={msg.action.handler}>{msg.action.label}</button>
+      {/if}
       <button on:click={() => toast.dismiss(msg.id)} aria-label="Dismiss">✕</button>
     </div>
   {/each}
@@ -16,4 +19,5 @@
   .toast-container { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 200; pointer-events: none; }
   .toast { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 12px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-primary); pointer-events: all; max-width: 340px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
   .toast button { background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 10px; padding: 2px; flex-shrink: 0; }
+  .toast button.action { border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 11px; padding: 2px 8px; }
 </style>
