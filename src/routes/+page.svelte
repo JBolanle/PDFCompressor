@@ -111,10 +111,12 @@
   let unlisteners: Array<() => void> = [];
 
   onMount(async () => {
-    settings.load();
+    await settings.load();
     window.addEventListener("keydown", onKeyDown);
 
-    await checkAndShowUpdateToast();
+    if (get(settings).auto_update_check) {
+      checkAndShowUpdateToast();
+    }
 
     unlisteners = await Promise.all([
       listen("menu:add-files",        () => addFiles()),
@@ -123,6 +125,10 @@
       listen("menu:clear-queue",      () => clearAll()),
       listen("menu:reset-selected",   () => resetSelected()),
       listen("menu:check-for-update", () => checkAndShowUpdateToast(true)),
+      listen("menu:check-for-update-auto", () => {
+        const current = get(settings);
+        settings.save({ ...current, auto_update_check: !current.auto_update_check });
+      }),
     ]);
   });
 

@@ -19,7 +19,7 @@ describe("DetailPanel", () => {
   beforeEach(async () => {
     queue.clear();
     selectedFileId.set(null);
-    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix" });
+    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix", auto_update_check: false });
     vi.clearAllMocks();
   });
 
