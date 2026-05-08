@@ -22,7 +22,7 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
         Some(AboutMetadata {
             icon: Some(include_image!("icons/icon.png")),
             name: Some("compress[pdf]".to_string()),
-            version: Some("1.1.0".to_string()),
+            version: Some(env!("CARGO_PKG_VERSION").to_string()),
             copyright: Some("Copyright \u{00A9} 2026 Olajumoke Bolanle".to_string()),
             license: Some("GNU Affero General Public License v3.0".to_string()),
             website: Some("https://github.com/JBolanle/PDFCompressor/".to_string()),
