@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { get } from "svelte/store";
 
-// Mock @tauri-apps/api/core BEFORE importing the store
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue({
     output_mode: "custom_folder",
     output_folder: "/my/folder",
     naming: "overwrite",
+    auto_update_check: true,
   }),
 }));
 
@@ -21,6 +21,7 @@ describe("settingsStore", () => {
     expect(s.output_mode).toBe("same_as_source");
     expect(s.output_folder).toBeNull();
     expect(s.naming).toBe("suffix");
+    expect(s.auto_update_check).toBe(false);
   });
 
   it("load() calls get_settings and updates the store", async () => {
@@ -30,6 +31,7 @@ describe("settingsStore", () => {
     expect(s.output_mode).toBe("custom_folder");
     expect(s.output_folder).toBe("/my/folder");
     expect(s.naming).toBe("overwrite");
+    expect(s.auto_update_check).toBe(true);
   });
 
   it("save() calls save_settings with current value", async () => {
@@ -37,6 +39,7 @@ describe("settingsStore", () => {
       output_mode: "same_as_source" as const,
       output_folder: null,
       naming: "suffix" as const,
+      auto_update_check: false,
     };
     await settings.save(newSettings);
     expect(invoke).toHaveBeenCalledWith("save_settings", { settings: newSettings });
