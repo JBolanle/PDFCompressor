@@ -1,5 +1,8 @@
 <script lang="ts">
   import { derived } from "svelte/store";
+  import { tweened } from "svelte/motion";
+  import { cubicOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
   import { open } from "@tauri-apps/plugin-dialog";
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
@@ -8,6 +11,10 @@
   import { revealInFinder } from "$lib/fileActions";
 
   const selectedFile = derived([queue, selectedFileId], ([$q, $id]) => $q.find((e) => e.id === $id) ?? null);
+
+  const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const animatedPct = tweened(0, { duration: reducedMotion ? 0 : 700, easing: cubicOut });
+  const animatedRatio = tweened(0, { duration: reducedMotion ? 0 : 750, easing: cubicOut });
 
   $: hasFiles = $queue.length > 0;
 
@@ -36,6 +43,24 @@
   $: sliderMin = presetDpiRanges[currentPreset][0];
   $: sliderMax = presetDpiRanges[currentPreset][2];
   $: sliderValue = $selectedFile?.dpiOverride ?? presetDpiRanges[currentPreset][1];
+
+  $: {
+    if ($selectedFile?.status === "done" && $selectedFile.compressedSize !== undefined) {
+      const pct = Math.round((($selectedFile.size - $selectedFile.compressedSize) / $selectedFile.size) * 100);
+      const ratio = ($selectedFile.size - $selectedFile.compressedSize) / $selectedFile.size;
+      (async () => {
+        await Promise.all([
+          animatedPct.set(0, { duration: 0 }),
+          animatedRatio.set(0, { duration: 0 }),
+        ]);
+        animatedPct.set(pct);
+        animatedRatio.set(ratio);
+      })();
+    } else {
+      animatedPct.set(0, { duration: 0 });
+      animatedRatio.set(0, { duration: 0 });
+    }
+  }
 
   let outputMode: "same_as_source" | "custom_folder" = $settings.output_mode;
   let naming: "suffix" | "overwrite" = $settings.naming;
@@ -78,8 +103,11 @@
       <div class="sizes">
         <div class="size-row"><span class="label">Original</span><span>{formatBytes($selectedFile.size)}</span></div>
         {#if $selectedFile.status === "done" && $selectedFile.compressedSize !== undefined}
-          <div class="result-block">
-            <div class="savings-pct">{savingsPct($selectedFile.size, $selectedFile.compressedSize)}</div>
+          <div class="result-block" in:fly={{ y: 6, duration: reducedMotion ? 0 : 280, easing: cubicOut }}>
+            <div class="savings-pct">−{Math.round($animatedPct)}%</div>
+            <div class="savings-bar-track" aria-hidden="true">
+              <div class="savings-bar-fill" style="transform: scaleX({$animatedRatio})"></div>
+            </div>
             <div class="size-story">
               {formatBytes($selectedFile.size)} → {formatBytes($selectedFile.compressedSize)}
               · saved {formatBytes($selectedFile.size - $selectedFile.compressedSize)}
@@ -217,6 +245,21 @@
   .label { color: var(--text-tertiary); }
 
   .result-block { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .savings-bar-track {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+    margin: 0 0 2px;
+  }
+  .savings-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--success);
+    border-radius: 1px;
+    transform-origin: left;
+    transform: scaleX(0);
+  }
   .savings-pct {
     font-family: var(--font-display);
     font-size: 28px;

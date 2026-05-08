@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(gh pr *)",
+            "command": "cmd=$(jq -r '.tool_input.command'); echo \"$cmd\" | grep -q 'gh pr create' || exit 0; (cd src-tauri && cargo fmt) 2>/dev/null; git diff --quiet src-tauri/src/ || { git add src-tauri/src/ && git commit -m 'style: apply cargo fmt'; }",
+            "statusMessage": "Running cargo fmt…",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

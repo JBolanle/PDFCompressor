@@ -1,16 +1,33 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { scale, fly } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   import { listen } from "@tauri-apps/api/event";
   import { queue } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { addFiles, addPath } from "$lib/fileActions";
 
   let isDragOver = false;
+  let dragDepth = 0;
   let unlistenDrop: (() => void) | undefined;
+
+  function onDragEnter() {
+    dragDepth++;
+    isDragOver = true;
+  }
+
+  function onDragLeave() {
+    if (--dragDepth <= 0) {
+      dragDepth = 0;
+      isDragOver = false;
+    }
+  }
 
   onMount(async () => {
     unlistenDrop = await listen<{ paths: string[] }>("tauri://drag-drop", (event) => {
       isDragOver = false;
+      dragDepth = 0;
       for (const path of event.payload.paths) addPath(path);
     });
   });
@@ -21,14 +38,15 @@
 <aside
   class="sidebar"
   class:drag-over={isDragOver}
-  on:dragover|preventDefault={() => (isDragOver = true)}
-  on:dragleave={() => (isDragOver = false)}
+  on:dragenter={onDragEnter}
+  on:dragleave={onDragLeave}
+  on:dragover|preventDefault={() => {}}
   role="region"
   aria-label="File queue"
 >
   <div class="header">
     Queue
-    {#if $queue.length > 0}<span class="count">{$queue.length}</span>{/if}
+    {#if $queue.length > 0}<span class="count" in:scale={{ duration: reducedMotion ? 0 : 200, start: 0.5, easing: cubicOut }}>{$queue.length}</span>{/if}
   </div>
 
   {#if $queue.length === 0}
@@ -47,9 +65,11 @@
           on:click={() => selectedFileId.set(entry.id)}
           tabindex="0"
           on:keydown={(e) => e.key === "Enter" && selectedFileId.set(entry.id)}
+          in:fly={{ y: reducedMotion ? 0 : -6, duration: reducedMotion ? 0 : 180, easing: cubicOut }}
+          out:fly={{ x: reducedMotion ? 0 : -12, duration: reducedMotion ? 0 : 130, easing: cubicOut }}
         >
           <span class="status-icon" class:done={entry.status === "done"} class:error={entry.status === "error"} class:processing={entry.status === "processing"}>
-            {#if entry.status === "done"}✓{:else if entry.status === "error"}✕{:else if entry.status === "processing"}<span class="spinner"></span>{:else}○{/if}
+            {#if entry.status === "done"}<span in:scale={{ duration: reducedMotion ? 0 : 220, start: 0.4, easing: cubicOut }}>✓</span>{:else if entry.status === "error"}✕{:else if entry.status === "processing"}<span class="spinner"></span>{:else}○{/if}
           </span>
           <span class="filename">{entry.name}</span>
           <button
@@ -75,9 +95,23 @@
     border-top: 1px solid var(--border);
     overflow: hidden;
     flex-shrink: 0;
+    transition: background 0.2s, border-top-color 0.2s;
   }
-  .sidebar.drag-over { background: color-mix(in oklch, var(--bg-secondary), var(--accent) 8%); }
-  .sidebar.drag-over .empty { border-color: var(--accent); color: var(--accent); }
+  .sidebar.drag-over {
+    background: color-mix(in oklch, var(--bg-secondary), var(--accent) 8%);
+    border-top-color: var(--accent);
+  }
+  .sidebar.drag-over .empty {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent), transparent 80%);
+    animation: drop-zone-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes drop-zone-enter {
+    0%   { transform: scale(1); }
+    55%  { transform: scale(1.022); }
+    100% { transform: scale(1.01); }
+  }
   .header {
     padding: 8px 12px 4px;
     font-size: var(--text-sm);
@@ -112,7 +146,13 @@
     margin: 8px;
     border: 1.5px dashed var(--border);
     border-radius: var(--radius-md);
-    transition: border-color 0.15s, color 0.15s;
+    transform-origin: center;
+    transition: border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+    .empty { transition: border-color 0.15s, color 0.15s; }
+    .sidebar.drag-over .empty { animation: none; box-shadow: none; }
   }
   .empty-title { font-size: 12px; color: var(--text-secondary); font-weight: var(--weight-medium); }
   .empty-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; }
