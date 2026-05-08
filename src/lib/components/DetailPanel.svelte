@@ -5,16 +5,11 @@
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
+  import { formatBytes } from "$lib/notification";
 
   const selectedFile = derived([queue, selectedFileId], ([$q, $id]) => $q.find((e) => e.id === $id) ?? null);
 
   $: hasFiles = $queue.length > 0;
-
-  function formatSize(bytes: number): string {
-    if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
-    if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(0)} KB`;
-    return `${bytes} B`;
-  }
 
   function savingsPct(original: number, compressed: number): string {
     return `−${Math.round(((original - compressed) / original) * 100)}%`;
@@ -85,13 +80,13 @@
       {/if}
 
       <div class="sizes">
-        <div class="size-row"><span class="label">Original</span><span>{formatSize($selectedFile.size)}</span></div>
+        <div class="size-row"><span class="label">Original</span><span>{formatBytes($selectedFile.size)}</span></div>
         {#if $selectedFile.status === "done" && $selectedFile.compressedSize !== undefined}
           <div class="result-block">
             <div class="savings-pct">{savingsPct($selectedFile.size, $selectedFile.compressedSize)}</div>
             <div class="size-story">
-              {formatSize($selectedFile.size)} → {formatSize($selectedFile.compressedSize)}
-              · saved {formatSize($selectedFile.size - $selectedFile.compressedSize)}
+              {formatBytes($selectedFile.size)} → {formatBytes($selectedFile.compressedSize)}
+              · saved {formatBytes($selectedFile.size - $selectedFile.compressedSize)}
             </div>
             <div class="result-actions">
               <button class="finder-btn" on:click={() => revealInFinder($selectedFile!.path)}>Show in Finder</button>
