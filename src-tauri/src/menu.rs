@@ -14,7 +14,9 @@ pub const MENU_IDS: &[&str] = &[
     "check-for-update",
 ];
 
-pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry, CheckMenuItem<tauri::Wry>)> {
+pub fn build_menu(
+    app: &tauri::AppHandle,
+) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry, CheckMenuItem<tauri::Wry>)> {
     // ── App menu (compress[pdf]) ──────────────────────────────────────────
     let about = PredefinedMenuItem::about(
         app,

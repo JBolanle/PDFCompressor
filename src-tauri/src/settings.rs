@@ -218,7 +218,11 @@ mod tests {
     fn auto_update_check_defaults_when_absent_from_json() {
         let tmp = TempDir::new().unwrap();
         let path = tmp.path().join("settings.json");
-        std::fs::write(&path, r#"{"output_mode":"same_as_source","naming":"suffix"}"#).unwrap();
+        std::fs::write(
+            &path,
+            r#"{"output_mode":"same_as_source","naming":"suffix"}"#,
+        )
+        .unwrap();
         let loaded = load_settings_from_path(&path).unwrap();
         assert!(!loaded.auto_update_check);
     }

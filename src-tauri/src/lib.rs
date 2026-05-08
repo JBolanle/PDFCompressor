@@ -50,7 +50,9 @@ pub fn run() {
     use crate::compress::compress_files;
     use crate::finder::reveal_in_finder;
     use crate::menu::{build_menu, set_menu_item_enabled};
-    use crate::settings::{get_settings, load_settings_from_path, save_settings, settings_file_path};
+    use crate::settings::{
+        get_settings, load_settings_from_path, save_settings, settings_file_path,
+    };
     use crate::updater::check_for_update;
     use tauri::{Emitter, Manager};
 
@@ -63,8 +65,8 @@ pub fn run() {
             let (menu, registry, auto_update_item) = build_menu(app.handle())?;
             app.set_menu(menu)?;
 
-            let saved = load_settings_from_path(&settings_file_path(app.handle()))
-                .unwrap_or_default();
+            let saved =
+                load_settings_from_path(&settings_file_path(app.handle())).unwrap_or_default();
             auto_update_item.set_checked(saved.auto_update_check).ok();
 
             app.handle().on_menu_event(|app, event| {
