@@ -1,21 +1,21 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import { listen } from "@tauri-apps/api/event";
   import { queue } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { addFiles, addPath } from "$lib/fileActions";
 
   let isDragOver = false;
+  let unlistenDrop: (() => void) | undefined;
 
-  function onDrop(e: DragEvent) {
-    isDragOver = false;
-    e.preventDefault();
-    const items = Array.from(e.dataTransfer?.items ?? []);
-    for (const item of items) {
-      if (item.kind === "file") {
-        const file = item.getAsFile();
-        if (file) addPath((file as any).path ?? file.name);
-      }
-    }
-  }
+  onMount(async () => {
+    unlistenDrop = await listen<{ paths: string[] }>("tauri://drag-drop", (event) => {
+      isDragOver = false;
+      for (const path of event.payload.paths) addPath(path);
+    });
+  });
+
+  onDestroy(() => unlistenDrop?.());
 </script>
 
 <aside
@@ -23,7 +23,6 @@
   class:drag-over={isDragOver}
   on:dragover|preventDefault={() => (isDragOver = true)}
   on:dragleave={() => (isDragOver = false)}
-  on:drop={onDrop}
   role="region"
   aria-label="File queue"
 >
