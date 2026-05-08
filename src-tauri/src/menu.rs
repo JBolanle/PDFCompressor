@@ -176,4 +176,45 @@ mod tests {
         assert!(ids.contains("compress"));
         assert!(ids.contains("reset-selected"));
     }
+
+    #[test]
+    fn menu_ids_sync_with_build_menu() {
+        // Hardcoded list of IDs that are inserted in build_menu's HashMap
+        let build_menu_ids: &[&str] = &[
+            "add-files",
+            "reveal-in-finder",
+            "clear-queue",
+            "compress",
+            "reset-selected",
+            "check-for-update",
+        ];
+
+        // Assert length matches
+        assert_eq!(
+            MENU_IDS.len(),
+            build_menu_ids.len(),
+            "MENU_IDS and build_menu HashMap have different lengths"
+        );
+
+        // Assert all MENU_IDS appear in build_menu_ids
+        let build_menu_set: std::collections::HashSet<&str> =
+            build_menu_ids.iter().copied().collect();
+        for id in MENU_IDS {
+            assert!(
+                build_menu_set.contains(id),
+                "ID '{}' in MENU_IDS is not inserted in build_menu",
+                id
+            );
+        }
+
+        // Assert all build_menu_ids appear in MENU_IDS
+        let menu_ids_set: std::collections::HashSet<&str> = MENU_IDS.iter().copied().collect();
+        for id in build_menu_ids {
+            assert!(
+                menu_ids_set.contains(id),
+                "ID '{}' inserted in build_menu is not in MENU_IDS",
+                id
+            );
+        }
+    }
 }
