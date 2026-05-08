@@ -10,6 +10,13 @@ pub fn parse_version(tag: &str) -> Option<(u64, u64, u64)> {
     Some((major, minor, patch))
 }
 
+pub fn is_newer(latest: &str, current: &str) -> bool {
+    match (parse_version(latest), parse_version(current)) {
+        (Some(l), Some(c)) => l > c,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -38,5 +45,25 @@ mod tests {
     fn parse_version_returns_none_for_prerelease() {
         // "v2.0.0-beta.1" splits into 4 parts on "." → None
         assert_eq!(parse_version("v2.0.0-beta.1"), None);
+    }
+
+    #[test]
+    fn is_newer_returns_true_when_latest_is_newer() {
+        assert!(is_newer("v1.4.0", "1.3.0"));
+    }
+
+    #[test]
+    fn is_newer_returns_false_for_same_version() {
+        assert!(!is_newer("v1.3.0", "1.3.0"));
+    }
+
+    #[test]
+    fn is_newer_returns_false_when_older() {
+        assert!(!is_newer("v1.2.0", "1.3.0"));
+    }
+
+    #[test]
+    fn is_newer_returns_false_for_unparseable_latest() {
+        assert!(!is_newer("v2.0.0-beta.1", "1.3.0"));
     }
 }
