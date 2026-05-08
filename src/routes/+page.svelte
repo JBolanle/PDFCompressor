@@ -12,6 +12,8 @@
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { addFiles } from "$lib/fileActions";
   import { handleShortcut, type ShortcutState } from "$lib/shortcuts";
+  import { openUrl } from "@tauri-apps/plugin-opener";
+  import { toast } from "$lib/stores/toastStore";
 
   $: selectedFile = $queue.find((e) => e.id === $selectedFileId) ?? null;
   $: isCompressing = $queue.some((e) => e.status === "processing");
@@ -97,12 +99,32 @@
   onMount(async () => {
     settings.load();
     window.addEventListener("keydown", onKeyDown);
+
+    const version: string | null = await invoke("check_for_update");
+    if (version) {
+      toast.showPersistent(`v${version} is available`, {
+        label: "Download",
+        handler: () => openUrl("https://github.com/JBolanle/PDFCompressor/releases/latest"),
+      });
+    }
+
     unlisteners = await Promise.all([
       listen("menu:add-files",        () => addFiles()),
       listen("menu:compress",         () => triggerCompress()),
       listen("menu:reveal-in-finder", () => revealSelected()),
       listen("menu:clear-queue",      () => clearAll()),
       listen("menu:reset-selected",   () => resetSelected()),
+      listen("menu:check-for-update", async () => {
+        const v: string | null = await invoke("check_for_update");
+        if (v) {
+          toast.showPersistent(`v${v} is available`, {
+            label: "Download",
+            handler: () => openUrl("https://github.com/JBolanle/PDFCompressor/releases/latest"),
+          });
+        } else {
+          toast.show("You're on the latest version");
+        }
+      }),
     ]);
   });
 

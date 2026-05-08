@@ -4,6 +4,7 @@ pub mod finder;
 pub mod menu;
 pub mod path_resolver;
 pub mod settings;
+pub mod updater;
 
 #[derive(serde::Serialize)]
 struct FileMeta {
@@ -55,6 +56,7 @@ pub fn run() {
     use crate::finder::reveal_in_finder;
     use crate::menu::{build_menu, set_menu_item_enabled};
     use crate::settings::{get_settings, save_settings};
+    use crate::updater::check_for_update;
     use tauri::{Emitter, Manager};
 
     tauri::Builder::default()
@@ -72,6 +74,7 @@ pub fn run() {
                     "clear-queue" => "menu:clear-queue",
                     "compress" => "menu:compress",
                     "reset-selected" => "menu:reset-selected",
+                    "check-for-update" => "menu:check-for-update",
                     _ => return,
                 };
                 let _ = app.emit(name, ());
@@ -88,6 +91,7 @@ pub fn run() {
             validate_pdf,
             check_path_writable_cmd,
             set_menu_item_enabled,
+            check_for_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

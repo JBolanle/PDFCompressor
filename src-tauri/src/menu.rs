@@ -11,6 +11,7 @@ pub const MENU_IDS: &[&str] = &[
     "clear-queue",
     "compress",
     "reset-selected",
+    "check-for-update",
 ];
 
 pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, MenuRegistry)> {
@@ -113,7 +114,22 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
         &[&minimize, &win_sep, &close_window],
     )?;
 
-    let menu = Menu::with_items(app, &[&app_menu, &file_menu, &queue_menu, &window_menu])?;
+    // ── Help menu ─────────────────────────────────────────────────────────
+    let check_for_updates = MenuItem::with_id(
+        app,
+        "check-for-update",
+        "Check for Updates\u{2026}",
+        true,
+        None::<&str>,
+    )?;
+
+    let help_menu =
+        Submenu::with_id_and_items(app, "help-menu", "Help", true, &[&check_for_updates])?;
+
+    let menu = Menu::with_items(
+        app,
+        &[&app_menu, &file_menu, &queue_menu, &window_menu, &help_menu],
+    )?;
 
     let mut map = HashMap::new();
     map.insert("add-files".to_string(), add_files);
@@ -121,6 +137,7 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
     map.insert("clear-queue".to_string(), clear_queue);
     map.insert("compress".to_string(), compress);
     map.insert("reset-selected".to_string(), reset);
+    map.insert("check-for-update".to_string(), check_for_updates);
 
     Ok((menu, MenuRegistry(Mutex::new(map))))
 }
