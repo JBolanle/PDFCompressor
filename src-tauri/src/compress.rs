@@ -95,13 +95,16 @@ pub async fn compress_files(
             Ok(()) => {
                 if let Err(e) = std::fs::rename(&tmp_path, &output_path) {
                     let _ = std::fs::remove_file(&tmp_path);
-                    let _ = app.emit("compress:progress", ProgressEvent {
-                        file: job.path.clone(),
-                        status: "error".into(),
-                        saved_bytes: None,
-                        compressed_size: None,
-                        error_msg: Some(e.to_string()),
-                    });
+                    let _ = app.emit(
+                        "compress:progress",
+                        ProgressEvent {
+                            file: job.path.clone(),
+                            status: "error".into(),
+                            saved_bytes: None,
+                            compressed_size: None,
+                            error_msg: Some(e.to_string()),
+                        },
+                    );
                     continue;
                 }
 
