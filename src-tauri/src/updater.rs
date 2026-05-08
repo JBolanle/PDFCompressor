@@ -17,6 +17,41 @@ pub fn is_newer(latest: &str, current: &str) -> bool {
     }
 }
 
+#[derive(serde::Deserialize)]
+struct GithubRelease {
+    tag_name: String,
+}
+
+#[tauri::command]
+pub async fn check_for_update() -> Option<String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .user_agent("compress-pdf-updater")
+        .build()
+        .ok()?;
+
+    let release: GithubRelease = client
+        .get("https://api.github.com/repos/JBolanle/PDFCompressor/releases/latest")
+        .send()
+        .await
+        .ok()?
+        .json()
+        .await
+        .ok()?;
+
+    if is_newer(&release.tag_name, env!("CARGO_PKG_VERSION")) {
+        Some(
+            release
+                .tag_name
+                .strip_prefix('v')
+                .unwrap_or(&release.tag_name)
+                .to_string(),
+        )
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

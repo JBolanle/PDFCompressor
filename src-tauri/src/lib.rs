@@ -56,6 +56,7 @@ pub fn run() {
     use crate::finder::reveal_in_finder;
     use crate::menu::{build_menu, set_menu_item_enabled};
     use crate::settings::{get_settings, save_settings};
+    use crate::updater::check_for_update;
     use tauri::{Emitter, Manager};
 
     tauri::Builder::default()
@@ -89,6 +90,7 @@ pub fn run() {
             validate_pdf,
             check_path_writable_cmd,
             set_menu_item_enabled,
+            check_for_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
