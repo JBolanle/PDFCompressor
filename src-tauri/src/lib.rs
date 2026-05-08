@@ -74,6 +74,7 @@ pub fn run() {
                     "clear-queue" => "menu:clear-queue",
                     "compress" => "menu:compress",
                     "reset-selected" => "menu:reset-selected",
+                    "check-for-update" => "menu:check-for-update",
                     _ => return,
                 };
                 let _ = app.emit(name, ());
