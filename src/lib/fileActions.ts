@@ -2,8 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { queue } from "$lib/stores/queueStore";
 
+export function basename(path: string): string {
+  return path.split("/").pop() ?? path;
+}
+
 export async function addPath(path: string): Promise<void> {
-  const name = path.split("/").pop() ?? path;
+  const name = basename(path);
   try {
     const isPdf = await invoke<boolean>("validate_pdf", { path });
     if (!isPdf) {
