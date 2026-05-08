@@ -123,13 +123,8 @@ pub fn build_menu(app: &tauri::AppHandle) -> tauri::Result<(Menu<tauri::Wry>, Me
         None::<&str>,
     )?;
 
-    let help_menu = Submenu::with_id_and_items(
-        app,
-        "help-menu",
-        "Help",
-        true,
-        &[&check_for_updates],
-    )?;
+    let help_menu =
+        Submenu::with_id_and_items(app, "help-menu", "Help", true, &[&check_for_updates])?;
 
     let menu = Menu::with_items(
         app,
