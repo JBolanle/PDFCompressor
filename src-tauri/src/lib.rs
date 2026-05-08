@@ -4,6 +4,7 @@ pub mod finder;
 pub mod menu;
 pub mod path_resolver;
 pub mod settings;
+pub mod updater;
 
 #[derive(serde::Serialize)]
 struct FileMeta {
