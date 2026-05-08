@@ -2,8 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { queue } from "$lib/stores/queueStore";
 
+export function basename(path: string): string {
+  return path.split("/").pop() ?? path;
+}
+
 export async function addPath(path: string): Promise<void> {
-  const name = path.split("/").pop() ?? path;
+  const name = basename(path);
   try {
     const isPdf = await invoke<boolean>("validate_pdf", { path });
     if (!isPdf) {
@@ -23,4 +27,8 @@ export async function addFiles(): Promise<void> {
   if (!paths) return;
   const list = Array.isArray(paths) ? paths : [paths];
   for (const path of list) await addPath(path);
+}
+
+export function revealInFinder(path: string): void {
+  invoke("reveal_in_finder", { path }).catch(() => {});
 }

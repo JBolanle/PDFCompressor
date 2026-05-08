@@ -93,7 +93,20 @@ pub async fn compress_files(
 
         match run_gs(&app, args).await {
             Ok(()) => {
-                std::fs::rename(&tmp_path, &output_path).map_err(|e| e.to_string())?;
+                if let Err(e) = std::fs::rename(&tmp_path, &output_path) {
+                    let _ = std::fs::remove_file(&tmp_path);
+                    let _ = app.emit(
+                        "compress:progress",
+                        ProgressEvent {
+                            file: job.path.clone(),
+                            status: "error".into(),
+                            saved_bytes: None,
+                            compressed_size: None,
+                            error_msg: Some(e.to_string()),
+                        },
+                    );
+                    continue;
+                }
 
                 let compressed_size = std::fs::metadata(&output_path)
                     .map(|m| m.len() as i64)

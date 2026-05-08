@@ -8,6 +8,7 @@
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
   import { toast } from "$lib/stores/toastStore";
+  import { basename } from "$lib/fileActions";
   import { buildNotificationBody } from "$lib/notification";
 
   const doneCount = derived(queue, ($q) => $q.filter((e) => e.status === "done").length);
@@ -59,7 +60,7 @@
         compressDone++;
       } else if (payload.status === "error") {
         queue.updateStatus(payload.file, "error", { errorMsg: payload.error_msg });
-        const name = payload.file.split("/").pop() ?? payload.file;
+        const name = basename(payload.file);
         toast.show(`${name}: ${payload.error_msg ?? "Compression failed"}`);
         compressDone++;
       } else {

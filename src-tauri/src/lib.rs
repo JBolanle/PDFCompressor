@@ -45,11 +45,6 @@ pub fn check_path_writable(path: String) -> bool {
     }
 }
 
-#[tauri::command]
-fn check_path_writable_cmd(path: String) -> bool {
-    check_path_writable(path)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use crate::compress::compress_files;
@@ -89,7 +84,6 @@ pub fn run() {
             reveal_in_finder,
             get_file_meta,
             validate_pdf,
-            check_path_writable_cmd,
             set_menu_item_enabled,
             check_for_update,
         ])

@@ -1,5 +1,9 @@
+fn strip_v(tag: &str) -> &str {
+    tag.strip_prefix('v').unwrap_or(tag)
+}
+
 pub fn parse_version(tag: &str) -> Option<(u64, u64, u64)> {
-    let s = tag.strip_prefix('v').unwrap_or(tag);
+    let s = strip_v(tag);
     let parts: Vec<&str> = s.split('.').collect();
     if parts.len() != 3 {
         return None;
@@ -40,13 +44,7 @@ pub async fn check_for_update() -> Option<String> {
         .ok()?;
 
     if is_newer(&release.tag_name, env!("CARGO_PKG_VERSION")) {
-        Some(
-            release
-                .tag_name
-                .strip_prefix('v')
-                .unwrap_or(&release.tag_name)
-                .to_string(),
-        )
+        Some(strip_v(&release.tag_name).to_string())
     } else {
         None
     }
