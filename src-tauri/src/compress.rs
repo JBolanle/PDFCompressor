@@ -1,15 +1,16 @@
 use crate::path_resolver::resolve_output_path;
 use crate::settings::Settings;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri::Emitter;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Preset {
     Max,
+    #[default]
     Balanced,
     Minimal,
 }
@@ -58,12 +59,20 @@ pub struct ProgressEvent {
     pub error_msg: Option<String>,
 }
 
-#[tauri::command]
-pub async fn compress_files(
+#[derive(Debug, Clone)]
+pub struct CompressOutcome {
+    pub file: String,
+    pub saved_bytes: Option<i64>,
+    pub error: Option<String>,
+}
+
+pub async fn compress_files_inner(
     app: AppHandle,
     jobs: Vec<CompressJob>,
     settings: Settings,
-) -> Result<(), String> {
+) -> Vec<CompressOutcome> {
+    let mut outcomes = Vec::with_capacity(jobs.len());
+
     for job in &jobs {
         let _ = app.emit(
             "compress:progress",
@@ -95,6 +104,7 @@ pub async fn compress_files(
             Ok(()) => {
                 if let Err(e) = std::fs::rename(&tmp_path, &output_path) {
                     let _ = std::fs::remove_file(&tmp_path);
+                    let msg = e.to_string();
                     let _ = app.emit(
                         "compress:progress",
                         ProgressEvent {
@@ -102,26 +112,37 @@ pub async fn compress_files(
                             status: "error".into(),
                             saved_bytes: None,
                             compressed_size: None,
-                            error_msg: Some(e.to_string()),
+                            error_msg: Some(msg.clone()),
                         },
                     );
+                    outcomes.push(CompressOutcome {
+                        file: job.path.clone(),
+                        saved_bytes: None,
+                        error: Some(msg),
+                    });
                     continue;
                 }
 
                 let compressed_size = std::fs::metadata(&output_path)
                     .map(|m| m.len() as i64)
                     .unwrap_or(0);
+                let saved = original_size - compressed_size;
 
                 let _ = app.emit(
                     "compress:progress",
                     ProgressEvent {
                         file: job.path.clone(),
                         status: "done".into(),
-                        saved_bytes: Some(original_size - compressed_size),
+                        saved_bytes: Some(saved),
                         compressed_size: Some(compressed_size),
                         error_msg: None,
                     },
                 );
+                outcomes.push(CompressOutcome {
+                    file: job.path.clone(),
+                    saved_bytes: Some(saved),
+                    error: None,
+                });
             }
             Err(msg) => {
                 let _ = std::fs::remove_file(&tmp_path);
@@ -133,12 +154,28 @@ pub async fn compress_files(
                         status: "error".into(),
                         saved_bytes: None,
                         compressed_size: None,
-                        error_msg: Some(msg),
+                        error_msg: Some(msg.clone()),
                     },
                 );
+                outcomes.push(CompressOutcome {
+                    file: job.path.clone(),
+                    saved_bytes: None,
+                    error: Some(msg),
+                });
             }
         }
     }
+
+    outcomes
+}
+
+#[tauri::command]
+pub async fn compress_files(
+    app: AppHandle,
+    jobs: Vec<CompressJob>,
+    settings: Settings,
+) -> Result<(), String> {
+    compress_files_inner(app, jobs, settings).await;
     Ok(())
 }
 

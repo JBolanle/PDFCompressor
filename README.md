@@ -52,6 +52,16 @@ xattr -dr com.apple.quarantine "/Applications/compress[pdf].app"
 
 Output goes to the same folder with a `_compressed` suffix, or to a custom folder of your choosing.
 
+## Finder integration
+
+You can compress PDFs without opening the app — pick whichever route fits your workflow:
+
+- **Right-click → Open With → compress[pdf]** — works out of the box once the app is in `/Applications`. macOS lists compress[pdf] alongside Preview and any other PDF viewers you have installed.
+- **Right-click → Compress with compress[pdf]** (Quick Action) — open the app, expand **Advanced** in the side panel, and click **Install**. The entry appears at the top of Finder's right-click menu, no submenu nesting.
+- **Drop PDFs onto the Dock icon** — drag one or more PDFs onto the app icon in the Dock to start compression.
+
+All three routes run in the background — no window appears — and use your saved Output, Naming, and Default preset settings. A native notification reports total bytes saved when the run finishes.
+
 ## For developers
 
 **Stack:**

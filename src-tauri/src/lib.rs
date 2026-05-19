@@ -1,10 +1,23 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 pub mod compress;
 pub mod finder;
+pub mod headless;
 pub mod menu;
 pub mod path_resolver;
+pub mod quick_action;
 pub mod settings;
 pub mod updater;
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+/// Set true as soon as any file-open invocation (RunEvent::Opened or a
+/// second-instance argv with PDFs) is observed during startup. The deferred
+/// window-show task reads this to decide whether to surface the main window.
+#[derive(Default)]
+pub struct LaunchState {
+    pub headless: Arc<AtomicBool>,
+}
 
 #[derive(serde::Serialize)]
 struct FileMeta {
@@ -49,18 +62,41 @@ pub fn check_path_writable(path: String) -> bool {
 pub fn run() {
     use crate::compress::compress_files;
     use crate::finder::reveal_in_finder;
+    use crate::headless::compress_paths_headless;
     use crate::menu::{build_menu, set_menu_item_enabled};
+    use crate::quick_action::{
+        install_quick_action, is_quick_action_installed, uninstall_quick_action,
+    };
     use crate::settings::{
         get_settings, load_settings_from_path, save_settings, settings_file_path,
     };
     use crate::updater::check_for_update;
-    use tauri::{Emitter, Manager};
+    use std::path::PathBuf;
+    use tauri::{Emitter, Manager, RunEvent};
+
+    let launch_state = LaunchState::default();
+    let headless_flag_for_single_instance = launch_state.headless.clone();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(
+            move |app, argv, _cwd| {
+                // A second launch (e.g. user opens another PDF via "Open With"
+                // while we're already running) forwards its argv here.
+                let paths = argv_pdf_paths(&argv);
+                if !paths.is_empty() {
+                    headless_flag_for_single_instance.store(true, Ordering::Relaxed);
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        compress_paths_headless(app, paths).await;
+                    });
+                }
+            },
+        ))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .manage(launch_state)
         .setup(|app| {
             let (menu, registry, auto_update_item) = build_menu(app.handle())?;
             app.set_menu(menu)?;
@@ -83,6 +119,22 @@ pub fn run() {
                 let _ = app.emit(name, ());
             });
             app.manage(registry);
+
+            // The window is configured with `visible: false`. If no file-open
+            // event arrives within a short grace window, surface it. If one
+            // does arrive, the Opened-event handler keeps the flag set and
+            // we stay headless for this launch.
+            let handle = app.handle().clone();
+            let flag = handle.state::<LaunchState>().headless.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+                if !flag.load(Ordering::Relaxed) {
+                    if let Some(window) = handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -94,9 +146,38 @@ pub fn run() {
             validate_pdf,
             set_menu_item_enabled,
             check_for_update,
+            install_quick_action,
+            is_quick_action_installed,
+            uninstall_quick_action,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let RunEvent::Opened { urls } = event {
+                let paths: Vec<PathBuf> =
+                    urls.iter().filter_map(|u| u.to_file_path().ok()).collect();
+                if paths.is_empty() {
+                    return;
+                }
+                app.state::<LaunchState>()
+                    .headless
+                    .store(true, Ordering::Relaxed);
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    compress_paths_headless(app, paths).await;
+                });
+            }
+        });
+}
+
+/// Extract PDF paths from a process argv vector, skipping the program name
+/// and any non-`.pdf` tokens. Used by the single-instance forwarder.
+pub fn argv_pdf_paths(argv: &[String]) -> Vec<std::path::PathBuf> {
+    argv.iter()
+        .skip(1)
+        .filter(|s| s.to_ascii_lowercase().ends_with(".pdf"))
+        .map(std::path::PathBuf::from)
+        .collect()
 }
 
 #[cfg(test)]
@@ -165,5 +246,41 @@ mod lib_tests {
         assert!(!check_path_writable(
             "/nonexistent/path/that/cannot/exist".to_string()
         ));
+    }
+
+    #[test]
+    fn argv_pdf_paths_skips_program_name() {
+        let argv = vec![
+            "/Applications/compress[pdf].app/Contents/MacOS/pdf-compressor".to_string(),
+            "/tmp/a.pdf".to_string(),
+        ];
+        assert_eq!(
+            argv_pdf_paths(&argv),
+            vec![std::path::PathBuf::from("/tmp/a.pdf")]
+        );
+    }
+
+    #[test]
+    fn argv_pdf_paths_filters_non_pdf_args() {
+        let argv = vec![
+            "binary".to_string(),
+            "/tmp/a.pdf".to_string(),
+            "--flag".to_string(),
+            "/tmp/b.txt".to_string(),
+            "/tmp/c.PDF".to_string(),
+        ];
+        assert_eq!(
+            argv_pdf_paths(&argv),
+            vec![
+                std::path::PathBuf::from("/tmp/a.pdf"),
+                std::path::PathBuf::from("/tmp/c.PDF"),
+            ]
+        );
+    }
+
+    #[test]
+    fn argv_pdf_paths_empty_when_no_pdfs() {
+        let argv = vec!["binary".to_string(), "--version".to_string()];
+        assert!(argv_pdf_paths(&argv).is_empty());
     }
 }

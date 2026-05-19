@@ -2,11 +2,13 @@
   import { derived } from "svelte/store";
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
+  import { fly, slide } from "svelte/transition";
+  import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
+  import { toast } from "$lib/stores/toastStore";
   import { formatBytes } from "$lib/notification";
   import { revealInFinder } from "$lib/fileActions";
 
@@ -64,9 +66,48 @@
 
   let outputMode: "same_as_source" | "custom_folder" = $settings.output_mode;
   let naming: "suffix" | "overwrite" = $settings.naming;
+  let defaultPreset: Preset = $settings.default_preset;
+  let advancedOpen = false;
+  let quickActionInstalled = false;
+  let quickActionBusy = false;
 
   $: outputMode = $settings.output_mode;
   $: naming = $settings.naming;
+  $: defaultPreset = $settings.default_preset;
+
+  // Refresh install state the first time the drawer opens (or any time
+  // it re-opens — covers the case where the user installed/uninstalled
+  // the workflow via Finder while the app was open).
+  $: if (advancedOpen) {
+    refreshQuickActionState();
+  }
+
+  async function refreshQuickActionState() {
+    try {
+      quickActionInstalled = await invoke<boolean>("is_quick_action_installed");
+    } catch {
+      quickActionInstalled = false;
+    }
+  }
+
+  async function toggleQuickAction() {
+    if (quickActionBusy) return;
+    quickActionBusy = true;
+    try {
+      if (quickActionInstalled) {
+        await invoke("uninstall_quick_action");
+        toast.show("Quick Action removed from Finder");
+      } else {
+        await invoke("install_quick_action");
+        toast.show("Quick Action installed — right-click any PDF in Finder");
+      }
+      await refreshQuickActionState();
+    } catch (e) {
+      toast.show(typeof e === "string" ? e : "Quick Action update failed");
+    } finally {
+      quickActionBusy = false;
+    }
+  }
 
   function onPresetChange(preset: Preset) {
     if (!$selectedFile) return;
@@ -163,48 +204,101 @@
   {/if}
 
   <div class="settings-section">
-    <div class="section-label">Settings</div>
+    <div class="setting-row">
+      <span class="setting-label">Output</span>
+      <div class="segmented" role="radiogroup" aria-label="Output folder">
+        <label class="segment" class:active={outputMode === "same_as_source"}>
+          <input type="radio" name="output_mode" bind:group={outputMode} value="same_as_source"
+            on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
+          <span>Same as source</span>
+        </label>
+        <label class="segment" class:active={outputMode === "custom_folder"}>
+          <input type="radio" name="output_mode" bind:group={outputMode} value="custom_folder"
+            on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
+          <span>Custom folder</span>
+        </label>
+      </div>
+    </div>
 
-    <div class="field">
-      <div class="field-label">Output Folder</div>
-      <label class="radio-label">
-        <input type="radio" name="output_mode" bind:group={outputMode} value="same_as_source"
-          on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
-        <span class="radio-dot"></span>
-        Same as source
-      </label>
-      <label class="radio-label">
-        <input type="radio" name="output_mode" bind:group={outputMode} value="custom_folder"
-          on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
-        <span class="radio-dot"></span>
-        Custom folder
-      </label>
-      {#if $settings.output_mode === "custom_folder"}
+    {#if $settings.output_mode === "custom_folder"}
+      <div class="setting-row setting-row--detail">
+        <span class="setting-label" aria-hidden="true"></span>
         <div class="folder-row">
-          <span class="folder-path">{$settings.output_folder ?? "No folder selected"}</span>
+          <span class="folder-path" title={$settings.output_folder ?? ""}>{$settings.output_folder ?? "No folder selected"}</span>
           <button on:click={pickFolder}>Choose…</button>
         </div>
-      {/if}
+      </div>
+    {/if}
+
+    <div class="setting-row">
+      <span class="setting-label">Naming</span>
+      <div class="segmented" role="radiogroup" aria-label="File naming">
+        <label class="segment" class:active={naming === "suffix"}>
+          <input type="radio" name="naming" bind:group={naming} value="suffix"
+            on:change={() => settings.save({ ...$settings, naming })} />
+          <span><code>_compressed</code></span>
+        </label>
+        <label class="segment" class:active={naming === "overwrite"}>
+          <input type="radio" name="naming" bind:group={naming} value="overwrite"
+            on:change={() => settings.save({ ...$settings, naming })} />
+          <span>Overwrite original</span>
+        </label>
+      </div>
     </div>
 
-    <div class="field">
-      <div class="field-label">File Naming</div>
-      <label class="radio-label">
-        <input type="radio" name="naming" bind:group={naming} value="suffix"
-          on:change={() => settings.save({ ...$settings, naming })} />
-        <span class="radio-dot"></span>
-        Add <code>_compressed</code> suffix
-      </label>
-      <label class="radio-label">
-        <input type="radio" name="naming" bind:group={naming} value="overwrite"
-          on:change={() => settings.save({ ...$settings, naming })} />
-        <span class="radio-dot"></span>
-        Overwrite original
-      </label>
-      {#if naming === "overwrite"}
-        <p class="overwrite-warn">Original file will be replaced and cannot be recovered.</p>
-      {/if}
-    </div>
+    {#if naming === "overwrite"}
+      <div class="setting-row setting-row--detail">
+        <span class="setting-label" aria-hidden="true"></span>
+        <p class="overwrite-warn">Original replaced; cannot be recovered.</p>
+      </div>
+    {/if}
+
+    <button type="button" class="advanced-toggle" on:click={() => (advancedOpen = !advancedOpen)}
+      aria-expanded={advancedOpen} aria-controls="advanced-content">
+      <svg class="chevron" class:open={advancedOpen} viewBox="0 0 8 12" aria-hidden="true">
+        <path d="M2 1l4 5-4 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      Advanced
+    </button>
+
+    {#if advancedOpen}
+      <div id="advanced-content" class="advanced-content" transition:slide={{ duration: reducedMotion ? 0 : 180, easing: cubicOut }}>
+        <div class="setting-row">
+          <span class="setting-label">Default preset</span>
+          <div class="segmented" role="radiogroup" aria-label="Finder right-click preset">
+            {#each (["max", "balanced", "minimal"] as Preset[]) as p}
+              <label class="segment" class:active={defaultPreset === p}>
+                <input type="radio" name="default_preset" bind:group={defaultPreset} value={p}
+                  on:change={() => settings.save({ ...$settings, default_preset: defaultPreset })} />
+                <span>{presetInfo[p].label}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+
+        <div class="setting-row setting-row--detail">
+          <span class="setting-label" aria-hidden="true"></span>
+          <p class="setting-hint">Applied when you right-click a PDF in Finder and choose <em>Open With → compress[pdf]</em>. In-app files keep the per-file Quality preset above.</p>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">Quick Action</span>
+          <div class="quick-action-row">
+            <span class="quick-action-status" class:installed={quickActionInstalled}>
+              {quickActionInstalled ? "Installed" : "Not installed"}
+            </span>
+            <button class="quick-action-btn" on:click={toggleQuickAction} disabled={quickActionBusy}>
+              {quickActionBusy ? "…" : quickActionInstalled ? "Remove" : "Install"}
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-row--detail">
+          <span class="setting-label" aria-hidden="true"></span>
+          <p class="setting-hint">Adds a top-level <em>Compress with compress[pdf]</em> entry to Finder's right-click menu so you don't have to navigate the Open With submenu.</p>
+        </div>
+      </div>
+    {/if}
   </div>
 </section>
 
@@ -416,39 +510,190 @@
   .onboard-title { font-size: 13px; color: var(--text-secondary); font-weight: var(--weight-medium); }
   .onboard-sub { font-size: 11px; color: var(--text-tertiary); text-align: center; line-height: 1.5; }
 
-  .settings-section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field-label {
+  .settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+    margin-top: auto;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .setting-label {
+    flex: 0 0 88px;
     font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    letter-spacing: 0.01em;
     color: var(--text-tertiary);
+    letter-spacing: 0.01em;
   }
-  .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
-  .radio-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
-  .radio-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    background: var(--bg-primary);
-    flex-shrink: 0;
-    transition: border-color 0.15s;
+  .setting-row--detail {
+    margin-top: -6px;
   }
-  .radio-label input[type="radio"]:checked + .radio-dot {
-    border-color: var(--accent);
-    background: var(--accent);
-    box-shadow: inset 0 0 0 3px var(--bg-secondary);
+
+  .segmented {
+    flex: 1;
+    display: flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
   }
-  .radio-label:hover .radio-dot { border-color: var(--accent); }
+  .segment {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 3px;
+    text-align: center;
+    transition: background 120ms ease, color 120ms ease;
+    user-select: none;
+  }
+  .segment input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .segment:hover { color: var(--text-secondary); }
+  .segment.active {
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .segment code {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+    padding: 0;
+  }
+
   .overwrite-warn {
-    font-size: 10px;
+    font-size: var(--text-xs);
     color: var(--warning);
-    margin-top: -2px;
-    margin-left: 22px;
     line-height: 1.4;
+    margin: 0;
   }
-  .folder-row { display: flex; align-items: center; gap: 8px; }
-  .folder-path { flex: 1; font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .folder-row button { padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); }
+  .setting-hint {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .setting-hint em {
+    font-style: normal;
+    color: var(--text-secondary);
+  }
+
+  .advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    align-self: flex-start;
+    background: none;
+    border: 0;
+    padding: 2px 0;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color 120ms ease;
+    margin-top: var(--space-1);
+  }
+  .advanced-toggle:hover { color: var(--text-secondary); }
+  .chevron {
+    width: 8px;
+    height: 8px;
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .chevron.open { transform: rotate(90deg); }
+
+  .advanced-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .quick-action-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .quick-action-status {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .quick-action-status.installed {
+    color: var(--accent);
+  }
+  .quick-action-btn {
+    padding: 3px 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    transition: background 120ms ease, border-color 120ms ease;
+    min-width: 72px;
+  }
+  .quick-action-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+  }
+  .quick-action-btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .folder-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .folder-path {
+    flex: 1;
+    font-size: var(--text-sm);
+    color: var(--accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+  }
+  .folder-row button {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: var(--text-sm);
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+  .folder-row button:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+  }
 </style>

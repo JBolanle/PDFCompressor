@@ -7,6 +7,7 @@ vi.mock("@tauri-apps/api/core", () => ({
     output_folder: "/my/folder",
     naming: "overwrite",
     auto_update_check: true,
+    default_preset: "balanced",
   }),
 }));
 
@@ -40,6 +41,7 @@ describe("settingsStore", () => {
       output_folder: null,
       naming: "suffix" as const,
       auto_update_check: false,
+      default_preset: "balanced" as const,
     };
     await settings.save(newSettings);
     expect(invoke).toHaveBeenCalledWith("save_settings", { settings: newSettings });

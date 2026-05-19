@@ -19,7 +19,7 @@ describe("DetailPanel", () => {
   beforeEach(async () => {
     queue.clear();
     selectedFileId.set(null);
-    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix", auto_update_check: false });
+    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix", auto_update_check: false, default_preset: "balanced" });
     vi.clearAllMocks();
   });
 
@@ -69,16 +69,33 @@ describe("DetailPanel", () => {
 
   it("shows settings section when no file is selected", () => {
     render(DetailPanel);
-    expect(screen.getByText(/output folder/i)).toBeInTheDocument();
-    expect(screen.getByText(/file naming/i)).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+    expect(screen.getByText("Naming")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /advanced/i })).toBeInTheDocument();
   });
 
   it("shows settings section when a file is selected", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
-    expect(screen.getByText(/output folder/i)).toBeInTheDocument();
-    expect(screen.getByText(/file naming/i)).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+    expect(screen.getByText("Naming")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /advanced/i })).toBeInTheDocument();
+  });
+
+  it("Default preset is hidden inside the Advanced drawer by default", () => {
+    render(DetailPanel);
+    expect(screen.queryByText("Default preset")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /advanced/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("clicking Advanced reveals the Default preset section", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(screen.getByText("Default preset")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /advanced/i })).toHaveAttribute("aria-expanded", "true");
   });
 
   it("changing output mode to custom_folder saves immediately", async () => {
@@ -121,5 +138,97 @@ describe("DetailPanel", () => {
     expect(invoke).toHaveBeenCalledWith("save_settings", {
       settings: expect.objectContaining({ output_folder: "/Users/me/Documents" }),
     });
+  });
+
+  it("Advanced drawer reveals Default preset radios after expand", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(screen.getByText("Default preset")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Max/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Balanced/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Minimal/i })).toBeInTheDocument();
+  });
+
+  it("changing default preset to max saves immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    await user.click(screen.getByRole("radio", { name: /^Max/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ default_preset: "max" }),
+    });
+  });
+
+  it("changing default preset to minimal saves immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    await user.click(screen.getByRole("radio", { name: /^Minimal/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ default_preset: "minimal" }),
+    });
+  });
+
+  // ── Quick Action install row ──────────────────────────────────────────────
+
+  it("Quick Action row shows 'Not installed' when backend reports false", async () => {
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return false;
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(await screen.findByText("Not installed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Install$/ })).toBeInTheDocument();
+  });
+
+  it("Quick Action row shows 'Installed' when backend reports true", async () => {
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return true;
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(await screen.findByText("Installed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Remove$/ })).toBeInTheDocument();
+  });
+
+  it("clicking Install invokes install_quick_action and re-reads state", async () => {
+    let installed = false;
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return installed;
+      if (cmd === "install_quick_action") {
+        installed = true;
+        return undefined;
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    await user.click(await screen.findByRole("button", { name: /^Install$/ }));
+    expect(invoke).toHaveBeenCalledWith("install_quick_action");
+    expect(await screen.findByText("Installed")).toBeInTheDocument();
+  });
+
+  it("clicking Remove invokes uninstall_quick_action and re-reads state", async () => {
+    let installed = true;
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return installed;
+      if (cmd === "uninstall_quick_action") {
+        installed = false;
+        return undefined;
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    await user.click(await screen.findByRole("button", { name: /^Remove$/ }));
+    expect(invoke).toHaveBeenCalledWith("uninstall_quick_action");
+    expect(await screen.findByText("Not installed")).toBeInTheDocument();
   });
 });
