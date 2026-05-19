@@ -4,6 +4,7 @@ pub mod finder;
 pub mod headless;
 pub mod menu;
 pub mod path_resolver;
+pub mod quick_action;
 pub mod settings;
 pub mod updater;
 
@@ -63,6 +64,9 @@ pub fn run() {
     use crate::finder::reveal_in_finder;
     use crate::headless::compress_paths_headless;
     use crate::menu::{build_menu, set_menu_item_enabled};
+    use crate::quick_action::{
+        install_quick_action, is_quick_action_installed, uninstall_quick_action,
+    };
     use crate::settings::{
         get_settings, load_settings_from_path, save_settings, settings_file_path,
     };
@@ -142,6 +146,9 @@ pub fn run() {
             validate_pdf,
             set_menu_item_enabled,
             check_for_update,
+            install_quick_action,
+            is_quick_action_installed,
+            uninstall_quick_action,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

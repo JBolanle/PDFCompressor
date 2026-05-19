@@ -169,4 +169,66 @@ describe("DetailPanel", () => {
       settings: expect.objectContaining({ default_preset: "minimal" }),
     });
   });
+
+  // ── Quick Action install row ──────────────────────────────────────────────
+
+  it("Quick Action row shows 'Not installed' when backend reports false", async () => {
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return false;
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(await screen.findByText("Not installed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Install$/ })).toBeInTheDocument();
+  });
+
+  it("Quick Action row shows 'Installed' when backend reports true", async () => {
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return true;
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(await screen.findByText("Installed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Remove$/ })).toBeInTheDocument();
+  });
+
+  it("clicking Install invokes install_quick_action and re-reads state", async () => {
+    let installed = false;
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return installed;
+      if (cmd === "install_quick_action") {
+        installed = true;
+        return undefined;
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    await user.click(await screen.findByRole("button", { name: /^Install$/ }));
+    expect(invoke).toHaveBeenCalledWith("install_quick_action");
+    expect(await screen.findByText("Installed")).toBeInTheDocument();
+  });
+
+  it("clicking Remove invokes uninstall_quick_action and re-reads state", async () => {
+    let installed = true;
+    vi.mocked(invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "is_quick_action_installed") return installed;
+      if (cmd === "uninstall_quick_action") {
+        installed = false;
+        return undefined;
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    await user.click(await screen.findByRole("button", { name: /^Remove$/ }));
+    expect(invoke).toHaveBeenCalledWith("uninstall_quick_action");
+    expect(await screen.findByText("Not installed")).toBeInTheDocument();
+  });
 });

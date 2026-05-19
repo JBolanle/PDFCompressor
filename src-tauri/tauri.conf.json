@@ -51,6 +51,7 @@
     "active": true,
     "targets": "all",
     "externalBin": ["binaries/gs"],
+    "resources": ["resources/Compress PDF.workflow/**/*"],
     "fileAssociations": [
       {
         "ext": ["pdf"],

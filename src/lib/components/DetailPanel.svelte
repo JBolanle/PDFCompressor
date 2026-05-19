@@ -3,10 +3,12 @@
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
   import { fly, slide } from "svelte/transition";
+  import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
   import { settings } from "$lib/stores/settingsStore";
+  import { toast } from "$lib/stores/toastStore";
   import { formatBytes } from "$lib/notification";
   import { revealInFinder } from "$lib/fileActions";
 
@@ -66,10 +68,46 @@
   let naming: "suffix" | "overwrite" = $settings.naming;
   let defaultPreset: Preset = $settings.default_preset;
   let advancedOpen = false;
+  let quickActionInstalled = false;
+  let quickActionBusy = false;
 
   $: outputMode = $settings.output_mode;
   $: naming = $settings.naming;
   $: defaultPreset = $settings.default_preset;
+
+  // Refresh install state the first time the drawer opens (or any time
+  // it re-opens — covers the case where the user installed/uninstalled
+  // the workflow via Finder while the app was open).
+  $: if (advancedOpen) {
+    refreshQuickActionState();
+  }
+
+  async function refreshQuickActionState() {
+    try {
+      quickActionInstalled = await invoke<boolean>("is_quick_action_installed");
+    } catch {
+      quickActionInstalled = false;
+    }
+  }
+
+  async function toggleQuickAction() {
+    if (quickActionBusy) return;
+    quickActionBusy = true;
+    try {
+      if (quickActionInstalled) {
+        await invoke("uninstall_quick_action");
+        toast.show("Quick Action removed from Finder");
+      } else {
+        await invoke("install_quick_action");
+        toast.show("Quick Action installed — right-click any PDF in Finder");
+      }
+      await refreshQuickActionState();
+    } catch (e) {
+      toast.show(typeof e === "string" ? e : "Quick Action update failed");
+    } finally {
+      quickActionBusy = false;
+    }
+  }
 
   function onPresetChange(preset: Preset) {
     if (!$selectedFile) return;
@@ -241,6 +279,23 @@
         <div class="setting-row setting-row--detail">
           <span class="setting-label" aria-hidden="true"></span>
           <p class="setting-hint">Applied when you right-click a PDF in Finder and choose <em>Open With → compress[pdf]</em>. In-app files keep the per-file Quality preset above.</p>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">Quick Action</span>
+          <div class="quick-action-row">
+            <span class="quick-action-status" class:installed={quickActionInstalled}>
+              {quickActionInstalled ? "Installed" : "Not installed"}
+            </span>
+            <button class="quick-action-btn" on:click={toggleQuickAction} disabled={quickActionBusy}>
+              {quickActionBusy ? "…" : quickActionInstalled ? "Remove" : "Install"}
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-row--detail">
+          <span class="setting-label" aria-hidden="true"></span>
+          <p class="setting-hint">Adds a top-level <em>Compress with compress[pdf]</em> entry to Finder's right-click menu so you don't have to navigate the Open With submenu.</p>
         </div>
       </div>
     {/if}
@@ -568,6 +623,45 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+  }
+
+  .quick-action-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .quick-action-status {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .quick-action-status.installed {
+    color: var(--accent);
+  }
+  .quick-action-btn {
+    padding: 3px 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    transition: background 120ms ease, border-color 120ms ease;
+    min-width: 72px;
+  }
+  .quick-action-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+  }
+  .quick-action-btn:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 
   .folder-row {
