@@ -69,16 +69,18 @@ describe("DetailPanel", () => {
 
   it("shows settings section when no file is selected", () => {
     render(DetailPanel);
-    expect(screen.getByText(/output folder/i)).toBeInTheDocument();
-    expect(screen.getByText(/file naming/i)).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+    expect(screen.getByText("Naming")).toBeInTheDocument();
+    expect(screen.getByText("Right-click")).toBeInTheDocument();
   });
 
   it("shows settings section when a file is selected", () => {
     queue.addFile({ path: "/tmp/a.pdf", name: "a.pdf", size: 1000 });
     selectedFileId.set(get(queue)[0].id);
     render(DetailPanel);
-    expect(screen.getByText(/output folder/i)).toBeInTheDocument();
-    expect(screen.getByText(/file naming/i)).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+    expect(screen.getByText("Naming")).toBeInTheDocument();
+    expect(screen.getByText("Right-click")).toBeInTheDocument();
   });
 
   it("changing output mode to custom_folder saves immediately", async () => {
@@ -123,9 +125,9 @@ describe("DetailPanel", () => {
     });
   });
 
-  it("shows Finder right-click preset section with three options", () => {
+  it("shows Right-click preset section with three options", () => {
     render(DetailPanel);
-    expect(screen.getByText(/finder right-click preset/i)).toBeInTheDocument();
+    expect(screen.getByText("Right-click")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /^Max/i })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /^Balanced/i })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /^Minimal/i })).toBeInTheDocument();

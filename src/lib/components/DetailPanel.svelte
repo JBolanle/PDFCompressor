@@ -165,60 +165,66 @@
   {/if}
 
   <div class="settings-section">
-    <div class="section-label">Settings</div>
+    <div class="setting-row">
+      <span class="setting-label">Output</span>
+      <div class="segmented" role="radiogroup" aria-label="Output folder">
+        <label class="segment" class:active={outputMode === "same_as_source"}>
+          <input type="radio" name="output_mode" bind:group={outputMode} value="same_as_source"
+            on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
+          <span>Same as source</span>
+        </label>
+        <label class="segment" class:active={outputMode === "custom_folder"}>
+          <input type="radio" name="output_mode" bind:group={outputMode} value="custom_folder"
+            on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
+          <span>Custom folder</span>
+        </label>
+      </div>
+    </div>
 
-    <div class="field">
-      <div class="field-label">Output Folder</div>
-      <label class="radio-label">
-        <input type="radio" name="output_mode" bind:group={outputMode} value="same_as_source"
-          on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
-        <span class="radio-dot"></span>
-        Same as source
-      </label>
-      <label class="radio-label">
-        <input type="radio" name="output_mode" bind:group={outputMode} value="custom_folder"
-          on:change={() => settings.save({ ...$settings, output_mode: outputMode })} />
-        <span class="radio-dot"></span>
-        Custom folder
-      </label>
-      {#if $settings.output_mode === "custom_folder"}
+    {#if $settings.output_mode === "custom_folder"}
+      <div class="setting-row setting-row--detail">
+        <span class="setting-label" aria-hidden="true"></span>
         <div class="folder-row">
-          <span class="folder-path">{$settings.output_folder ?? "No folder selected"}</span>
+          <span class="folder-path" title={$settings.output_folder ?? ""}>{$settings.output_folder ?? "No folder selected"}</span>
           <button on:click={pickFolder}>Choose…</button>
         </div>
-      {/if}
-    </div>
+      </div>
+    {/if}
 
-    <div class="field">
-      <div class="field-label">File Naming</div>
-      <label class="radio-label">
-        <input type="radio" name="naming" bind:group={naming} value="suffix"
-          on:change={() => settings.save({ ...$settings, naming })} />
-        <span class="radio-dot"></span>
-        Add <code>_compressed</code> suffix
-      </label>
-      <label class="radio-label">
-        <input type="radio" name="naming" bind:group={naming} value="overwrite"
-          on:change={() => settings.save({ ...$settings, naming })} />
-        <span class="radio-dot"></span>
-        Overwrite original
-      </label>
-      {#if naming === "overwrite"}
-        <p class="overwrite-warn">Original file will be replaced and cannot be recovered.</p>
-      {/if}
-    </div>
-
-    <div class="field">
-      <div class="field-label">Finder right-click preset</div>
-      <p class="field-hint">Used when you right-click a PDF in Finder and choose "Open With → compress[pdf]". The in-app preset above is set per file.</p>
-      {#each (["max", "balanced", "minimal"] as Preset[]) as p}
-        <label class="radio-label">
-          <input type="radio" name="default_preset" bind:group={defaultPreset} value={p}
-            on:change={() => settings.save({ ...$settings, default_preset: defaultPreset })} />
-          <span class="radio-dot"></span>
-          {presetInfo[p].label} <span class="radio-meta">— {presetInfo[p].desc}</span>
+    <div class="setting-row">
+      <span class="setting-label">Naming</span>
+      <div class="segmented" role="radiogroup" aria-label="File naming">
+        <label class="segment" class:active={naming === "suffix"}>
+          <input type="radio" name="naming" bind:group={naming} value="suffix"
+            on:change={() => settings.save({ ...$settings, naming })} />
+          <span><code>_compressed</code></span>
         </label>
-      {/each}
+        <label class="segment" class:active={naming === "overwrite"}>
+          <input type="radio" name="naming" bind:group={naming} value="overwrite"
+            on:change={() => settings.save({ ...$settings, naming })} />
+          <span>Overwrite original</span>
+        </label>
+      </div>
+    </div>
+
+    {#if naming === "overwrite"}
+      <div class="setting-row setting-row--detail">
+        <span class="setting-label" aria-hidden="true"></span>
+        <p class="overwrite-warn">Original replaced; cannot be recovered.</p>
+      </div>
+    {/if}
+
+    <div class="setting-row">
+      <span class="setting-label" title="Preset used when opening PDFs via Finder’s Open With">Right-click</span>
+      <div class="segmented" role="radiogroup" aria-label="Finder right-click preset">
+        {#each (["max", "balanced", "minimal"] as Preset[]) as p}
+          <label class="segment" class:active={defaultPreset === p}>
+            <input type="radio" name="default_preset" bind:group={defaultPreset} value={p}
+              on:change={() => settings.save({ ...$settings, default_preset: defaultPreset })} />
+            <span>{presetInfo[p].label}</span>
+          </label>
+        {/each}
+      </div>
     </div>
   </div>
 </section>
@@ -431,48 +437,112 @@
   .onboard-title { font-size: 13px; color: var(--text-secondary); font-weight: var(--weight-medium); }
   .onboard-sub { font-size: 11px; color: var(--text-tertiary); text-align: center; line-height: 1.5; }
 
-  .settings-section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field-label {
+  .settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+    margin-top: auto;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .setting-label {
+    flex: 0 0 88px;
     font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
+    color: var(--text-tertiary);
     letter-spacing: 0.01em;
+  }
+  .setting-row--detail {
+    margin-top: -6px;
+  }
+
+  .segmented {
+    flex: 1;
+    display: flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+  }
+  .segment {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    font-size: var(--text-sm);
     color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 3px;
+    text-align: center;
+    transition: background 120ms ease, color 120ms ease;
+    user-select: none;
   }
-  .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
-  .radio-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
-  .radio-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    background: var(--bg-primary);
-    flex-shrink: 0;
-    transition: border-color 0.15s;
+  .segment input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
   }
-  .radio-label input[type="radio"]:checked + .radio-dot {
-    border-color: var(--accent);
-    background: var(--accent);
-    box-shadow: inset 0 0 0 3px var(--bg-secondary);
+  .segment:hover { color: var(--text-secondary); }
+  .segment.active {
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    box-shadow: inset 0 0 0 1px var(--border);
   }
-  .radio-label:hover .radio-dot { border-color: var(--accent); }
+  .segment code {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+    padding: 0;
+  }
+
   .overwrite-warn {
-    font-size: 10px;
+    font-size: var(--text-xs);
     color: var(--warning);
-    margin-top: -2px;
-    margin-left: 22px;
     line-height: 1.4;
+    margin: 0;
   }
-  .field-hint {
-    font-size: 10px;
-    color: var(--text-tertiary);
-    line-height: 1.4;
-    margin: -2px 0 4px;
+
+  .folder-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
   }
-  .radio-meta {
-    color: var(--text-tertiary);
+  .folder-path {
+    flex: 1;
+    font-size: var(--text-sm);
+    color: var(--accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
   }
-  .folder-row { display: flex; align-items: center; gap: 8px; }
-  .folder-path { flex: 1; font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .folder-row button { padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); }
+  .folder-row button {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: var(--text-sm);
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+  .folder-row button:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+  }
 </style>
