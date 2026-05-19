@@ -2,7 +2,7 @@
   import { derived } from "svelte/store";
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
+  import { fly, slide } from "svelte/transition";
   import { open } from "@tauri-apps/plugin-dialog";
   import { queue, type Preset } from "$lib/stores/queueStore";
   import { selectedFileId } from "$lib/stores/selectionStore";
@@ -65,6 +65,7 @@
   let outputMode: "same_as_source" | "custom_folder" = $settings.output_mode;
   let naming: "suffix" | "overwrite" = $settings.naming;
   let defaultPreset: Preset = $settings.default_preset;
+  let advancedOpen = false;
 
   $: outputMode = $settings.output_mode;
   $: naming = $settings.naming;
@@ -214,18 +215,35 @@
       </div>
     {/if}
 
-    <div class="setting-row">
-      <span class="setting-label" title="Preset used when opening PDFs via Finder’s Open With">Right-click</span>
-      <div class="segmented" role="radiogroup" aria-label="Finder right-click preset">
-        {#each (["max", "balanced", "minimal"] as Preset[]) as p}
-          <label class="segment" class:active={defaultPreset === p}>
-            <input type="radio" name="default_preset" bind:group={defaultPreset} value={p}
-              on:change={() => settings.save({ ...$settings, default_preset: defaultPreset })} />
-            <span>{presetInfo[p].label}</span>
-          </label>
-        {/each}
+    <button type="button" class="advanced-toggle" on:click={() => (advancedOpen = !advancedOpen)}
+      aria-expanded={advancedOpen} aria-controls="advanced-content">
+      <svg class="chevron" class:open={advancedOpen} viewBox="0 0 8 12" aria-hidden="true">
+        <path d="M2 1l4 5-4 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      Advanced
+    </button>
+
+    {#if advancedOpen}
+      <div id="advanced-content" class="advanced-content" transition:slide={{ duration: reducedMotion ? 0 : 180, easing: cubicOut }}>
+        <div class="setting-row">
+          <span class="setting-label">Default preset</span>
+          <div class="segmented" role="radiogroup" aria-label="Finder right-click preset">
+            {#each (["max", "balanced", "minimal"] as Preset[]) as p}
+              <label class="segment" class:active={defaultPreset === p}>
+                <input type="radio" name="default_preset" bind:group={defaultPreset} value={p}
+                  on:change={() => settings.save({ ...$settings, default_preset: defaultPreset })} />
+                <span>{presetInfo[p].label}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+
+        <div class="setting-row setting-row--detail">
+          <span class="setting-label" aria-hidden="true"></span>
+          <p class="setting-hint">Applied when you right-click a PDF in Finder and choose <em>Open With → compress[pdf]</em>. In-app files keep the per-file Quality preset above.</p>
+        </div>
       </div>
-    </div>
+    {/if}
   </div>
 </section>
 
@@ -511,6 +529,45 @@
     color: var(--warning);
     line-height: 1.4;
     margin: 0;
+  }
+  .setting-hint {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .setting-hint em {
+    font-style: normal;
+    color: var(--text-secondary);
+  }
+
+  .advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    align-self: flex-start;
+    background: none;
+    border: 0;
+    padding: 2px 0;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color 120ms ease;
+    margin-top: var(--space-1);
+  }
+  .advanced-toggle:hover { color: var(--text-secondary); }
+  .chevron {
+    width: 8px;
+    height: 8px;
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .chevron.open { transform: rotate(90deg); }
+
+  .advanced-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
   }
 
   .folder-row {

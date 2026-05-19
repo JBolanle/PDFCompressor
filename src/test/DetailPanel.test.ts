@@ -71,7 +71,7 @@ describe("DetailPanel", () => {
     render(DetailPanel);
     expect(screen.getByText("Output")).toBeInTheDocument();
     expect(screen.getByText("Naming")).toBeInTheDocument();
-    expect(screen.getByText("Right-click")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /advanced/i })).toBeInTheDocument();
   });
 
   it("shows settings section when a file is selected", () => {
@@ -80,7 +80,22 @@ describe("DetailPanel", () => {
     render(DetailPanel);
     expect(screen.getByText("Output")).toBeInTheDocument();
     expect(screen.getByText("Naming")).toBeInTheDocument();
-    expect(screen.getByText("Right-click")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /advanced/i })).toBeInTheDocument();
+  });
+
+  it("Default preset is hidden inside the Advanced drawer by default", () => {
+    render(DetailPanel);
+    expect(screen.queryByText("Default preset")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /advanced/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("clicking Advanced reveals the Default preset section", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(screen.getByText("Default preset")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /advanced/i })).toHaveAttribute("aria-expanded", "true");
   });
 
   it("changing output mode to custom_folder saves immediately", async () => {
@@ -125,26 +140,30 @@ describe("DetailPanel", () => {
     });
   });
 
-  it("shows Right-click preset section with three options", () => {
+  it("Advanced drawer reveals Default preset radios after expand", async () => {
+    const user = userEvent.setup();
     render(DetailPanel);
-    expect(screen.getByText("Right-click")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
+    expect(screen.getByText("Default preset")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /^Max/i })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /^Balanced/i })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /^Minimal/i })).toBeInTheDocument();
   });
 
-  it("changing Finder right-click preset to max saves immediately", async () => {
+  it("changing default preset to max saves immediately", async () => {
     const user = userEvent.setup();
     render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
     await user.click(screen.getByRole("radio", { name: /^Max/i }));
     expect(invoke).toHaveBeenCalledWith("save_settings", {
       settings: expect.objectContaining({ default_preset: "max" }),
     });
   });
 
-  it("changing Finder right-click preset to minimal saves immediately", async () => {
+  it("changing default preset to minimal saves immediately", async () => {
     const user = userEvent.setup();
     render(DetailPanel);
+    await user.click(screen.getByRole("button", { name: /advanced/i }));
     await user.click(screen.getByRole("radio", { name: /^Minimal/i }));
     expect(invoke).toHaveBeenCalledWith("save_settings", {
       settings: expect.objectContaining({ default_preset: "minimal" }),
