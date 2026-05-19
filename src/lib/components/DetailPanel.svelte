@@ -64,9 +64,11 @@
 
   let outputMode: "same_as_source" | "custom_folder" = $settings.output_mode;
   let naming: "suffix" | "overwrite" = $settings.naming;
+  let defaultPreset: Preset = $settings.default_preset;
 
   $: outputMode = $settings.output_mode;
   $: naming = $settings.naming;
+  $: defaultPreset = $settings.default_preset;
 
   function onPresetChange(preset: Preset) {
     if (!$selectedFile) return;
@@ -204,6 +206,19 @@
       {#if naming === "overwrite"}
         <p class="overwrite-warn">Original file will be replaced and cannot be recovered.</p>
       {/if}
+    </div>
+
+    <div class="field">
+      <div class="field-label">Finder right-click preset</div>
+      <p class="field-hint">Used when you right-click a PDF in Finder and choose "Open With → compress[pdf]". The in-app preset above is set per file.</p>
+      {#each (["max", "balanced", "minimal"] as Preset[]) as p}
+        <label class="radio-label">
+          <input type="radio" name="default_preset" bind:group={defaultPreset} value={p}
+            on:change={() => settings.save({ ...$settings, default_preset: defaultPreset })} />
+          <span class="radio-dot"></span>
+          {presetInfo[p].label} <span class="radio-meta">— {presetInfo[p].desc}</span>
+        </label>
+      {/each}
     </div>
   </div>
 </section>
@@ -447,6 +462,15 @@
     margin-top: -2px;
     margin-left: 22px;
     line-height: 1.4;
+  }
+  .field-hint {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+    margin: -2px 0 4px;
+  }
+  .radio-meta {
+    color: var(--text-tertiary);
   }
   .folder-row { display: flex; align-items: center; gap: 8px; }
   .folder-path { flex: 1; font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

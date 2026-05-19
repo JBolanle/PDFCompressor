@@ -19,7 +19,7 @@ describe("DetailPanel", () => {
   beforeEach(async () => {
     queue.clear();
     selectedFileId.set(null);
-    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix", auto_update_check: false });
+    await settings.save({ output_mode: "same_as_source", output_folder: null, naming: "suffix", auto_update_check: false, default_preset: "balanced" });
     vi.clearAllMocks();
   });
 
@@ -120,6 +120,32 @@ describe("DetailPanel", () => {
     await user.click(screen.getByRole("button", { name: /choose/i }));
     expect(invoke).toHaveBeenCalledWith("save_settings", {
       settings: expect.objectContaining({ output_folder: "/Users/me/Documents" }),
+    });
+  });
+
+  it("shows Finder right-click preset section with three options", () => {
+    render(DetailPanel);
+    expect(screen.getByText(/finder right-click preset/i)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Max/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Balanced/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Minimal/i })).toBeInTheDocument();
+  });
+
+  it("changing Finder right-click preset to max saves immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("radio", { name: /^Max/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ default_preset: "max" }),
+    });
+  });
+
+  it("changing Finder right-click preset to minimal saves immediately", async () => {
+    const user = userEvent.setup();
+    render(DetailPanel);
+    await user.click(screen.getByRole("radio", { name: /^Minimal/i }));
+    expect(invoke).toHaveBeenCalledWith("save_settings", {
+      settings: expect.objectContaining({ default_preset: "minimal" }),
     });
   });
 });

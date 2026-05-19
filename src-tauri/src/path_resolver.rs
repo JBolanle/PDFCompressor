@@ -23,12 +23,7 @@ mod tests {
     use super::*;
 
     fn same_source_suffix() -> Settings {
-        Settings {
-            output_mode: OutputMode::SameAsSource,
-            output_folder: None,
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
-        }
+        Settings::default()
     }
 
     #[test]
@@ -46,7 +41,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/home/user/output".into()),
             naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         let result = resolve_output_path("/home/user/docs/report.pdf", &settings);
         assert_eq!(
@@ -61,7 +56,7 @@ mod tests {
             output_mode: OutputMode::SameAsSource,
             output_folder: None,
             naming: NamingMode::Overwrite,
-            auto_update_check: false,
+            ..Settings::default()
         };
         let result = resolve_output_path("/home/user/docs/report.pdf", &settings);
         assert_eq!(result, PathBuf::from("/home/user/docs/report.pdf"));
@@ -73,7 +68,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/out".into()),
             naming: NamingMode::Overwrite,
-            auto_update_check: false,
+            ..Settings::default()
         };
         let result = resolve_output_path("/home/user/docs/report.pdf", &settings);
         assert_eq!(result, PathBuf::from("/out/report.pdf"));

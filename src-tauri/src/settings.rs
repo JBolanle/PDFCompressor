@@ -1,3 +1,4 @@
+use crate::compress::Preset;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tauri::Manager;
@@ -23,6 +24,8 @@ pub struct Settings {
     pub naming: NamingMode,
     #[serde(default)]
     pub auto_update_check: bool,
+    #[serde(default)]
+    pub default_preset: Preset,
 }
 
 impl Default for Settings {
@@ -32,6 +35,7 @@ impl Default for Settings {
             output_folder: None,
             naming: NamingMode::Suffix,
             auto_update_check: false,
+            default_preset: Preset::default(),
         }
     }
 }
@@ -95,8 +99,7 @@ mod tests {
         let s = Settings {
             output_mode: OutputMode::SameAsSource,
             output_folder: None,
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         assert!(validate_settings(&s).is_ok());
     }
@@ -107,8 +110,7 @@ mod tests {
         let s = Settings {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some(tmp.path().to_string_lossy().into_owned()),
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         assert!(validate_settings(&s).is_ok());
     }
@@ -118,8 +120,7 @@ mod tests {
         let s = Settings {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("relative/path".into()),
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -129,8 +130,7 @@ mod tests {
         let s = Settings {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/nonexistent/path/that/should/not/exist/xyz".into()),
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -143,8 +143,7 @@ mod tests {
         let s = Settings {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some(file.to_string_lossy().into_owned()),
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -154,8 +153,7 @@ mod tests {
         let s = Settings {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/tmp/has\nnewline".into()),
-            naming: NamingMode::Suffix,
-            auto_update_check: false,
+            ..Settings::default()
         };
         assert!(validate_settings(&s).is_err());
     }
@@ -169,7 +167,7 @@ mod tests {
             output_mode: OutputMode::CustomFolder,
             output_folder: Some("/my/folder".into()),
             naming: NamingMode::Overwrite,
-            auto_update_check: false,
+            ..Settings::default()
         };
 
         save_settings_to_path(&original, &path).unwrap();
@@ -178,6 +176,38 @@ mod tests {
         assert!(matches!(loaded.output_mode, OutputMode::CustomFolder));
         assert_eq!(loaded.output_folder.as_deref(), Some("/my/folder"));
         assert!(matches!(loaded.naming, NamingMode::Overwrite));
+    }
+
+    #[test]
+    fn default_preset_is_balanced() {
+        let s = Settings::default();
+        assert_eq!(s.default_preset, Preset::Balanced);
+    }
+
+    #[test]
+    fn default_preset_defaults_when_absent_from_json() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("settings.json");
+        std::fs::write(
+            &path,
+            r#"{"output_mode":"same_as_source","naming":"suffix"}"#,
+        )
+        .unwrap();
+        let loaded = load_settings_from_path(&path).unwrap();
+        assert_eq!(loaded.default_preset, Preset::Balanced);
+    }
+
+    #[test]
+    fn default_preset_round_trips() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("settings.json");
+        let original = Settings {
+            default_preset: Preset::Max,
+            ..Settings::default()
+        };
+        save_settings_to_path(&original, &path).unwrap();
+        let loaded = load_settings_from_path(&path).unwrap();
+        assert_eq!(loaded.default_preset, Preset::Max);
     }
 
     #[test]
