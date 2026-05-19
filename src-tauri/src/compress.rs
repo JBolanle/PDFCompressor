@@ -6,18 +6,13 @@ use tauri::Emitter;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Preset {
     Max,
+    #[default]
     Balanced,
     Minimal,
-}
-
-impl Default for Preset {
-    fn default() -> Self {
-        Preset::Balanced
-    }
 }
 
 pub fn build_gs_args(

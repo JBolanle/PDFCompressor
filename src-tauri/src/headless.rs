@@ -51,7 +51,7 @@ pub fn summary_message(
 ) -> (String, String) {
     let title = match (succeeded, failed) {
         (0, _) => "Compression failed".to_string(),
-        (n, 0) if n == 1 => "Compressed 1 PDF".to_string(),
+        (1, 0) => "Compressed 1 PDF".to_string(),
         (n, 0) => format!("Compressed {n} PDFs"),
         (n, f) => format!("Compressed {n} of {} PDFs", n + f),
     };
